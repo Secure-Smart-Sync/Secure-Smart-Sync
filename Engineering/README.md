@@ -1,0 +1,1 @@
+###### This folder contains all the relevent documentations regarding the engineering aspect of this plugin, detailing decisions made and reasoning behind those, along with compromises in the architecture.
