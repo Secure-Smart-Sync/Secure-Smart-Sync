@@ -1,15 +1,75 @@
 /**
  * settings-tab.ts
  * Obsidian settings UI for Secure-Smart-Sync (SSS).
+ *
+ * QR code generation requires the `qrcode` npm package:
+ *   npm install qrcode @types/qrcode
  */
 
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Modal, Notice, PluginSettingTab, Setting } from "obsidian";
 import type SSSPlugin from "./main";
 import { StorageR2 } from "./storage-r2";
+import { exportCredentialBundle, importCredentialBundle } from "./credentials-transfer";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Format a timestamp as DD/MM/YYYY HH:MM */
+function formatSyncDate(ms: number): string {
+  const d   = new Date(ms);
+  const dd  = String(d.getDate()).padStart(2, "0");
+  const mm  = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh  = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+}
+
+// ─── QR Code Modal ────────────────────────────────────────────────────────────
+
+class QRModal extends Modal {
+  private readonly svgString: string;
+
+  constructor(app: App, svgString: string) {
+    super(app);
+    this.svgString = svgString;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.addClass("sss-qr-modal");
+
+    contentEl.createEl("h2", { text: "Scan to Set Up Another Device" });
+
+    contentEl.createEl("p", {
+      text: "⚠️ This QR code contains your full credentials including secret key and encryption password. Do not photograph or share it.",
+      cls: "sss-qr-warning",
+    });
+
+    // Render the QR SVG
+    const qrWrap = contentEl.createDiv({ cls: "sss-qr-wrap" });
+    qrWrap.innerHTML = this.svgString;
+
+    // Step-by-step instructions
+    const steps = contentEl.createEl("ol", { cls: "sss-qr-steps" });
+    steps.createEl("li", { text: "Scan the QR code with your phone's camera app (outside Obsidian)." });
+    steps.createEl("li", { text: "The camera app will show the credential text — copy all of it." });
+    steps.createEl("li", { text: "On your phone: open SSS Settings → Device Setup → Import Credentials → paste → Import." });
+
+    new Setting(contentEl)
+      .addButton((btn) =>
+        btn.setButtonText("Close").setCta().onClick(() => this.close())
+      );
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
 
 export class SSSSettingTab extends PluginSettingTab {
   private readonly plugin: SSSPlugin;
-  /** Holds the inline connection-test result element */
   private connectionResultEl?: HTMLElement;
 
   constructor(app: App, plugin: SSSPlugin) {
@@ -23,18 +83,99 @@ export class SSSSettingTab extends PluginSettingTab {
 
     containerEl.createEl("h2", { text: "Secure-Smart-Sync Settings" });
 
-    // ── Last-synced timestamp ──────────────────────────────────────────────────
+    // ── Last-synced timestamp ─────────────────────────────────────────────────
 
     const lastSynced = this.plugin.settings.lastSyncedAt;
-    const lastSyncedText = lastSynced
-      ? `Last synced: ${new Date(lastSynced).toLocaleString()}`
-      : "Not yet synced this session.";
     containerEl.createEl("p", {
-      text: lastSyncedText,
+      text: lastSynced
+        ? `Last synced: ${formatSyncDate(lastSynced)}`
+        : "Not yet synced this session.",
       cls: "sss-last-synced",
     });
 
-    // ── R2 Connection ──────────────────────────────────────────────────────────
+    // ── Device Setup (QR export / import) ─────────────────────────────────────
+
+    containerEl.createEl("h3", { text: "Device Setup" });
+    containerEl.createEl("p", {
+      text: "Transfer your connection credentials to another device without retyping. Generate a QR on this device and scan it on the other.",
+      cls: "sss-section-desc",
+    });
+
+    // Export
+    new Setting(containerEl)
+      .setName("Export to Another Device")
+      .setDesc("Generates a QR code containing all connection settings. The QR is shown only in the modal and never saved to disk.")
+      .addButton((btn) =>
+        btn.setButtonText("Generate QR Code").onClick(async () => {
+          const { endpoint, bucketName, accessKeyId, secretAccessKey } = this.plugin.settings.r2;
+          if (!endpoint || !bucketName || !accessKeyId || !secretAccessKey) {
+            new Notice("⚠️ Fill in all R2 credentials before generating a QR code.");
+            return;
+          }
+
+          btn.setDisabled(true);
+          btn.setButtonText("Generating…");
+
+          try {
+            // qrcode is a bundled npm package — run: npm install qrcode @types/qrcode
+            const QRCode = (await import("qrcode" as any)).default ?? (await import("qrcode" as any));
+            const json = exportCredentialBundle(this.plugin.settings);
+            const svg: string = await QRCode.toString(json, {
+              type: "svg",
+              errorCorrectionLevel: "M",
+              margin: 2,
+              width: 300,
+            });
+            new QRModal(this.app, svg).open();
+          } catch (e) {
+            const err = e as Error;
+            if (err.message?.includes("Cannot find module") || err.message?.includes("qrcode")) {
+              new Notice("QR generation failed: run  npm install qrcode @types/qrcode  in sss env, then rebuild.");
+            } else {
+              new Notice(`QR generation failed: ${err.message}`);
+            }
+            console.error("[SSS] QR generation error:", e);
+          } finally {
+            btn.setDisabled(false);
+            btn.setButtonText("Generate QR Code");
+          }
+        })
+      );
+
+    // Import
+    new Setting(containerEl)
+      .setName("Import Credentials")
+      .setDesc("Paste the text from a scanned QR code below, then tap Import. All connection fields will be populated automatically.");
+
+    const importTextarea = containerEl.createEl("textarea", {
+      cls: "sss-import-textarea",
+      placeholder: 'Paste credential text here (from QR scan)…',
+    });
+
+    new Setting(containerEl)
+      .addButton((btn) =>
+        btn.setButtonText("Import").onClick(async () => {
+          const raw = importTextarea.value.trim();
+          if (!raw) {
+            new Notice("Paste the credential text first.");
+            return;
+          }
+          try {
+            const imported = importCredentialBundle(raw);
+            Object.assign(this.plugin.settings.r2, imported.r2);
+            this.plugin.settings.encryptionPassword = imported.encryptionPassword;
+            this.plugin.settings.encryptionMethod    = imported.encryptionMethod;
+            await this.plugin.saveSettings();
+            importTextarea.value = "";
+            new Notice("✅ Credentials imported. Verify settings and tap Test Connection.");
+            this.display(); // refresh to show populated fields
+          } catch (e) {
+            new Notice(`❌ Import failed: ${(e as Error).message}`);
+          }
+        })
+      );
+
+    // ── R2 Connection ─────────────────────────────────────────────────────────
 
     containerEl.createEl("h3", { text: "Cloudflare R2 Connection" });
 
@@ -45,10 +186,7 @@ export class SSSSettingTab extends PluginSettingTab {
         text
           .setPlaceholder("https://xxxx.r2.cloudflarestorage.com")
           .setValue(this.plugin.settings.r2.endpoint)
-          .onChange(async (v) => {
-            this.plugin.settings.r2.endpoint = v.trim();
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v) => { this.plugin.settings.r2.endpoint = v.trim(); await this.plugin.saveSettings(); })
       );
 
     new Setting(containerEl)
@@ -58,10 +196,7 @@ export class SSSSettingTab extends PluginSettingTab {
         text
           .setPlaceholder("my-obsidian-vault")
           .setValue(this.plugin.settings.r2.bucketName)
-          .onChange(async (v) => {
-            this.plugin.settings.r2.bucketName = v.trim();
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v) => { this.plugin.settings.r2.bucketName = v.trim(); await this.plugin.saveSettings(); })
       );
 
     new Setting(containerEl)
@@ -70,23 +205,16 @@ export class SSSSettingTab extends PluginSettingTab {
         text
           .setPlaceholder("R2 Access Key ID")
           .setValue(this.plugin.settings.r2.accessKeyId)
-          .onChange(async (v) => {
-            this.plugin.settings.r2.accessKeyId = v.trim();
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v) => { this.plugin.settings.r2.accessKeyId = v.trim(); await this.plugin.saveSettings(); })
       );
 
-    // Secret key with show/hide toggle
     new Setting(containerEl)
       .setName("Secret Access Key")
       .addText((text) => {
         text
           .setPlaceholder("R2 Secret Access Key")
           .setValue(this.plugin.settings.r2.secretAccessKey)
-          .onChange(async (v) => {
-            this.plugin.settings.r2.secretAccessKey = v.trim();
-            await this.plugin.saveSettings();
-          });
+          .onChange(async (v) => { this.plugin.settings.r2.secretAccessKey = v.trim(); await this.plugin.saveSettings(); });
         text.inputEl.type = "password";
         text.inputEl.id = "sss-secret-key";
       })
@@ -94,36 +222,22 @@ export class SSSSettingTab extends PluginSettingTab {
         btn.setButtonText("Show").onClick(() => {
           const input = containerEl.querySelector<HTMLInputElement>("#sss-secret-key");
           if (!input) return;
-          if (input.type === "password") {
-            input.type = "text";
-            btn.setButtonText("Hide");
-          } else {
-            input.type = "password";
-            btn.setButtonText("Show");
-          }
+          const hidden = input.type === "password";
+          input.type = hidden ? "text" : "password";
+          btn.setButtonText(hidden ? "Hide" : "Show");
         });
       });
 
-    // Encryption password with show/hide toggle (moved to R2 section for logical flow)
-    // — handled in the Encryption section below.
-
     new Setting(containerEl)
       .setName("Remote Prefix (optional)")
-      .setDesc(
-        "Store vault files under a sub-path in the bucket, e.g. 'my-vault/'. " +
-        "Useful if you share the bucket across multiple vaults."
-      )
+      .setDesc("Store vault files under a sub-path in the bucket, e.g. 'my-vault/'. Useful if you share the bucket across multiple vaults.")
       .addText((text) =>
         text
           .setPlaceholder("my-vault/")
           .setValue(this.plugin.settings.r2.remotePrefix ?? "")
-          .onChange(async (v) => {
-            this.plugin.settings.r2.remotePrefix = v.trim();
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v) => { this.plugin.settings.r2.remotePrefix = v.trim(); await this.plugin.saveSettings(); })
       );
 
-    // Test connection with inline result
     const connTestSetting = new Setting(containerEl)
       .setName("Test Connection")
       .setDesc("Verify that the credentials and bucket name are correct.")
@@ -141,7 +255,6 @@ export class SSSSettingTab extends PluginSettingTab {
 
           btn.setDisabled(false);
           btn.setButtonText("Test");
-
           if (ok) {
             this._setConnectionResult("✅ Connected successfully!", "sss-conn-ok");
           } else {
@@ -150,10 +263,7 @@ export class SSSSettingTab extends PluginSettingTab {
         })
       );
 
-    // Inline result element sits below the button
-    this.connectionResultEl = connTestSetting.settingEl.createEl("div", {
-      cls: "sss-conn-result",
-    });
+    this.connectionResultEl = connTestSetting.settingEl.createEl("div", { cls: "sss-conn-result" });
 
     // ── Encryption ────────────────────────────────────────────────────────────
 
@@ -162,18 +272,14 @@ export class SSSSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Encryption Password")
       .setDesc(
-        "Files are encrypted before leaving your device. " +
-        "Leave blank to disable encryption. " +
+        "Files are encrypted before leaving your device. Leave blank to disable encryption. " +
         "⚠️ If you change or lose this password, your remote files will be unreadable."
       )
       .addText((text) => {
         text
           .setPlaceholder("leave blank for no encryption")
           .setValue(this.plugin.settings.encryptionPassword)
-          .onChange(async (v) => {
-            this.plugin.settings.encryptionPassword = v;
-            await this.plugin.saveSettings();
-          });
+          .onChange(async (v) => { this.plugin.settings.encryptionPassword = v; await this.plugin.saveSettings(); });
         text.inputEl.type = "password";
         text.inputEl.id = "sss-enc-password";
       })
@@ -181,13 +287,9 @@ export class SSSSettingTab extends PluginSettingTab {
         btn.setButtonText("Show").onClick(() => {
           const input = containerEl.querySelector<HTMLInputElement>("#sss-enc-password");
           if (!input) return;
-          if (input.type === "password") {
-            input.type = "text";
-            btn.setButtonText("Hide");
-          } else {
-            input.type = "password";
-            btn.setButtonText("Show");
-          }
+          const hidden = input.type === "password";
+          input.type = hidden ? "text" : "password";
+          btn.setButtonText(hidden ? "Hide" : "Show");
         });
       });
 
@@ -199,10 +301,7 @@ export class SSSSettingTab extends PluginSettingTab {
           .addOption("openssl-base64", "OpenSSL AES-CBC (encrypts content only)")
           .addOption("rclone-base64", "rclone Salsa20 (encrypts names + content)")
           .setValue(this.plugin.settings.encryptionMethod)
-          .onChange(async (v: any) => {
-            this.plugin.settings.encryptionMethod = v;
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v: any) => { this.plugin.settings.encryptionMethod = v; await this.plugin.saveSettings(); })
       );
 
     // ── Sync Behaviour ────────────────────────────────────────────────────────
@@ -217,18 +316,12 @@ export class SSSSettingTab extends PluginSettingTab {
           .addOption("push_only", "Push only (local → remote)")
           .addOption("pull_only", "Pull only (remote → local)")
           .setValue(this.plugin.settings.syncDirection)
-          .onChange(async (v: any) => {
-            this.plugin.settings.syncDirection = v;
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v: any) => { this.plugin.settings.syncDirection = v; await this.plugin.saveSettings(); })
       );
 
     new Setting(containerEl)
       .setName("Conflict Resolution")
-      .setDesc(
-        "What to do when the same file was changed on both sides. " +
-        "The losing version is always saved as a .conflict-YYYY-MM-DD backup before overwriting."
-      )
+      .setDesc("What to do when the same file was changed on both sides. The losing version is saved as a .conflict-YYYY-MM-DD backup before overwriting.")
       .addDropdown((dd) =>
         dd
           .addOption("keep_newer", "Keep newer version")
@@ -236,10 +329,7 @@ export class SSSSettingTab extends PluginSettingTab {
           .addOption("keep_local", "Always keep local")
           .addOption("keep_remote", "Always keep remote")
           .setValue(this.plugin.settings.conflictResolution)
-          .onChange(async (v: any) => {
-            this.plugin.settings.conflictResolution = v;
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v: any) => { this.plugin.settings.conflictResolution = v; await this.plugin.saveSettings(); })
       );
 
     new Setting(containerEl)
@@ -251,10 +341,7 @@ export class SSSSettingTab extends PluginSettingTab {
           .addOption("trash_local", "Move to Obsidian trash (.trash folder)")
           .addOption("permanent", "Delete permanently")
           .setValue(this.plugin.settings.deleteBehaviour)
-          .onChange(async (v: any) => {
-            this.plugin.settings.deleteBehaviour = v;
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v: any) => { this.plugin.settings.deleteBehaviour = v; await this.plugin.saveSettings(); })
       );
 
     new Setting(containerEl)
@@ -264,32 +351,22 @@ export class SSSSettingTab extends PluginSettingTab {
         const mb = this.plugin.settings.maxFileSizeBytes > 0
           ? String(this.plugin.settings.maxFileSizeBytes / 1024 / 1024)
           : "0";
-        text
-          .setPlaceholder("0")
-          .setValue(mb)
-          .onChange(async (v) => {
-            const n = parseFloat(v);
-            this.plugin.settings.maxFileSizeBytes = n > 0 ? Math.floor(n * 1024 * 1024) : -1;
-            await this.plugin.saveSettings();
-          });
+        text.setPlaceholder("0").setValue(mb).onChange(async (v) => {
+          const n = parseFloat(v);
+          this.plugin.settings.maxFileSizeBytes = n > 0 ? Math.floor(n * 1024 * 1024) : -1;
+          await this.plugin.saveSettings();
+        });
       });
 
     new Setting(containerEl)
       .setName("Ignore Paths")
-      .setDesc(
-        "One pattern per line. Supports glob wildcards (* and **). " +
-        "Examples: '*.tmp', 'archive/', '**/node_modules/**'. " +
-        "Lines beginning with # are treated as comments."
-      )
+      .setDesc("One pattern per line. Supports * and **. Examples: '*.tmp', 'archive/', '**/node_modules/**'. Lines starting with # are comments.")
       .addTextArea((area) => {
         area
           .setPlaceholder("*.tmp\narchive/\n# comment")
           .setValue((this.plugin.settings.ignorePaths ?? []).join("\n"))
           .onChange(async (v) => {
-            this.plugin.settings.ignorePaths = v
-              .split("\n")
-              .map((l) => l.trim())
-              .filter((l) => l.length > 0);
+            this.plugin.settings.ignorePaths = v.split("\n").map((l) => l.trim()).filter(Boolean);
             await this.plugin.saveSettings();
           });
         area.inputEl.rows = 6;
@@ -306,16 +383,12 @@ export class SSSSettingTab extends PluginSettingTab {
       .setDesc("Set to 0 to disable auto-sync.")
       .addText((text) => {
         const minutes = this.plugin.settings.autoSyncIntervalMs > 0
-          ? String(this.plugin.settings.autoSyncIntervalMs / 60000)
-          : "0";
-        text
-          .setPlaceholder("0")
-          .setValue(minutes)
-          .onChange(async (v) => {
-            const n = parseFloat(v);
-            this.plugin.settings.autoSyncIntervalMs = n > 0 ? Math.floor(n * 60000) : -1;
-            await this.plugin.saveSettings();
-          });
+          ? String(this.plugin.settings.autoSyncIntervalMs / 60000) : "0";
+        text.setPlaceholder("0").setValue(minutes).onChange(async (v) => {
+          const n = parseFloat(v);
+          this.plugin.settings.autoSyncIntervalMs = n > 0 ? Math.floor(n * 60000) : -1;
+          await this.plugin.saveSettings();
+        });
       });
 
     new Setting(containerEl)
@@ -323,16 +396,12 @@ export class SSSSettingTab extends PluginSettingTab {
       .setDesc("Trigger sync N seconds after saving a file. 0 = disabled.")
       .addText((text) => {
         const secs = this.plugin.settings.syncOnSaveDebounceMs > 0
-          ? String(this.plugin.settings.syncOnSaveDebounceMs / 1000)
-          : "0";
-        text
-          .setPlaceholder("0")
-          .setValue(secs)
-          .onChange(async (v) => {
-            const n = parseFloat(v);
-            this.plugin.settings.syncOnSaveDebounceMs = n > 0 ? Math.floor(n * 1000) : -1;
-            await this.plugin.saveSettings();
-          });
+          ? String(this.plugin.settings.syncOnSaveDebounceMs / 1000) : "0";
+        text.setPlaceholder("0").setValue(secs).onChange(async (v) => {
+          const n = parseFloat(v);
+          this.plugin.settings.syncOnSaveDebounceMs = n > 0 ? Math.floor(n * 1000) : -1;
+          await this.plugin.saveSettings();
+        });
       });
 
     // ── Advanced ──────────────────────────────────────────────────────────────
@@ -344,37 +413,30 @@ export class SSSSettingTab extends PluginSettingTab {
       .addDropdown((dd) =>
         dd
           .addOption("error", "Error only")
-          .addOption("warn", "Warn")
-          .addOption("info", "Info (default)")
+          .addOption("warn",  "Warn")
+          .addOption("info",  "Info (default)")
           .addOption("debug", "Debug (verbose)")
           .setValue(this.plugin.settings.logLevel)
-          .onChange(async (v: any) => {
-            this.plugin.settings.logLevel = v;
-            await this.plugin.saveSettings();
-          })
+          .onChange(async (v: any) => { this.plugin.settings.logLevel = v; await this.plugin.saveSettings(); })
       );
 
     new Setting(containerEl)
       .setName("Sync .obsidian Config Directory")
       .setDesc("Include your Obsidian configuration files in the sync.")
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.syncConfigDir)
-          .onChange(async (v) => {
-            this.plugin.settings.syncConfigDir = v;
-            await this.plugin.saveSettings();
-          })
+        toggle.setValue(this.plugin.settings.syncConfigDir).onChange(async (v) => {
+          this.plugin.settings.syncConfigDir = v;
+          await this.plugin.saveSettings();
+        })
       );
 
     new Setting(containerEl)
       .setName("Show Status Bar")
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showStatusBar)
-          .onChange(async (v) => {
-            this.plugin.settings.showStatusBar = v;
-            await this.plugin.saveSettings();
-          })
+        toggle.setValue(this.plugin.settings.showStatusBar).onChange(async (v) => {
+          this.plugin.settings.showStatusBar = v;
+          await this.plugin.saveSettings();
+        })
       );
 
     // ── Danger Zone ───────────────────────────────────────────────────────────
@@ -383,17 +445,11 @@ export class SSSSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Reset Sync History")
-      .setDesc(
-        "Clears the local record of what was synced last time. " +
-        "The next sync will do a full comparison of local vs remote."
-      )
+      .setDesc("Clears the local record of what was synced last time. The next sync will do a full comparison of local vs remote.")
       .addButton((btn) =>
-        btn
-          .setButtonText("Reset")
-          .setWarning()
-          .onClick(async () => {
-            await (this.plugin as any).resetSyncHistory?.();
-          })
+        btn.setButtonText("Reset").setWarning().onClick(async () => {
+          await (this.plugin as any).resetSyncHistory?.();
+        })
       );
   }
 

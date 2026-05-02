@@ -16,6 +16,14 @@
  *
  * rclone-base64:
  *   - Both file names AND folder names are encrypted.
+ *
+ * IMPORTANT — ETag passthrough:
+ *   S3 ETags are the MD5 of the encrypted blob. They don't change unless the
+ *   file content changes. The sync engine uses ETags as its primary
+ *   "has this file changed?" signal. Every entity returned by walk() and stat()
+ *   MUST carry the etag field; without it the engine falls back to mtime
+ *   comparison, and S3 server timestamps never match local file mtimes →
+ *   every file gets re-synced on every run.
  */
 
 import cloneDeep from "lodash/cloneDeep";
@@ -55,7 +63,7 @@ function isLikelyEncrypted(name: string): boolean {
 }
 
 /**
- * NOTE: This check is only valid for file entries, not folders.
+ * NOTE: Only call this on file entries (not folders).
  * In openssl-base64 mode, folder names are stored plaintext.
  */
 function methodMismatch(name: string, method: EncryptionMethod): boolean {
@@ -76,7 +84,6 @@ function cloneWithEnc(entity: FileEntity): FileEntity {
  * Returns true when a key should bypass name encryption/decryption.
  */
 function isPlaintextPassthrough(key: string, method: EncryptionMethod): boolean {
-  // openssl-base64 only encrypts file names, not folder paths
   return method === "openssl-base64" && key.endsWith("/");
 }
 
@@ -119,9 +126,8 @@ export class StorageEncrypt extends StorageBase {
   // ── Password validation ───────────────────────────────────────────────────────
 
   async validatePassword(): Promise<PasswordCheckResult> {
-    // Call the INNER storage's walkPartial directly to get raw (unprocessed)
-    // entries. Going through _processWalk would attempt decryption and throw
-    // on failure, instead of returning a clean result.
+    // Use inner.walkPartial() directly — going through _processWalk would
+    // attempt decryption and throw on bad passwords instead of returning a result.
     const rawPartial = await this.inner.walkPartial();
 
     if (!rawPartial.length) {
@@ -139,11 +145,9 @@ export class StorageEncrypt extends StorageBase {
       return { ok: false, reason: "unknown_method" };
     }
 
-    // For openssl-base64, folder names are plaintext — skip folders when
-    // looking for a file sample to validate the password against.
+    // openssl-base64: folder names are plaintext — find a file entry to sample
     const fileEntries = rawPartial.filter((e) => !e.keyRaw.endsWith("/"));
     if (!fileEntries.length) {
-      // Remote has only folders so far — can't verify password, assume ok
       return { ok: true, reason: "empty_remote" };
     }
 
@@ -178,7 +182,6 @@ export class StorageEncrypt extends StorageBase {
     for (const e of raw) {
       if (isSpecialFolderNameToSkip(e.keyRaw, [])) continue;
 
-      // Use key ?? keyRaw as the canonical key (key may be undefined)
       const entityKey = e.key ?? e.keyRaw;
 
       if (!this.hasPassword) {
@@ -189,7 +192,7 @@ export class StorageEncrypt extends StorageBase {
         continue;
       }
 
-      // openssl-base64: folder keys are stored plaintext — pass through unchanged
+      // openssl-base64: folders are stored plaintext — pass through unchanged
       if (isPlaintextPassthrough(e.keyRaw, this.method)) {
         const copy = cloneWithEnc(e);
         copy.key = e.keyRaw;
@@ -198,8 +201,6 @@ export class StorageEncrypt extends StorageBase {
         continue;
       }
 
-      // Attempt to decrypt the name. If decryption fails for a single entry,
-      // log a warning and skip it rather than aborting the entire walk.
       let plainKey: string;
       try {
         plainKey = await this._decryptName(e.keyRaw);
@@ -211,16 +212,20 @@ export class StorageEncrypt extends StorageBase {
         continue;
       }
 
-      const size = plainKey.endsWith("/") ? 0 : undefined;
       result.push({
-        key: plainKey,
-        keyRaw: e.keyRaw,
-        keyEnc: entityKey,
-        mtimeCli: e.mtimeCli,
-        mtimeSvr: e.mtimeSvr,
-        size,
-        sizeEnc: e.size,
-        sizeRaw: e.sizeRaw,
+        key:             plainKey,
+        keyRaw:          e.keyRaw,
+        keyEnc:          entityKey,
+        mtimeCli:        e.mtimeCli,
+        mtimeSvr:        e.mtimeSvr,
+        size:            plainKey.endsWith("/") ? 0 : undefined,
+        sizeEnc:         e.size,
+        sizeRaw:         e.sizeRaw,
+        // ↓ CRITICAL: carry the S3 ETag through the encryption layer.
+        // Without this, isChanged() can never do ETag comparison and falls
+        // back to mtime, where S3 server time ≠ local file time → every
+        // file appears "changed" on every sync.
+        etag:            e.etag,
         synthesizedFolder: e.synthesizedFolder,
       });
       this.cacheEncKeys[plainKey] = e.keyRaw;
@@ -238,13 +243,16 @@ export class StorageEncrypt extends StorageBase {
     const e = await this.inner.stat(encKey);
     return this.hasPassword ? {
       key,
-      keyRaw: e.keyRaw,
-      keyEnc: e.key!,
-      mtimeCli: e.mtimeCli,
-      mtimeSvr: e.mtimeSvr,
-      size: undefined,
-      sizeEnc: e.size,
-      sizeRaw: e.sizeRaw,
+      keyRaw:          e.keyRaw,
+      keyEnc:          e.key!,
+      mtimeCli:        e.mtimeCli,
+      mtimeSvr:        e.mtimeSvr,
+      size:            undefined, // plaintext size unknown without decrypting
+      sizeEnc:         e.size,
+      sizeRaw:         e.sizeRaw,
+      // ↓ Same as _processWalk: carry ETag through so push post-stat returns
+      // it to main.ts for storage in the prevSync record.
+      etag:            e.etag,
       synthesizedFolder: e.synthesizedFolder,
     } : cloneWithEnc(e);
   }
@@ -255,13 +263,6 @@ export class StorageEncrypt extends StorageBase {
     this._requireCache("mkdir");
     if (!key.endsWith("/")) throw new Error(`mkdir on non-folder: ${key}`);
     const encKey = await this._resolveOrEncryptKey(key);
-
-    if (!this.hasPassword || this.isFolderAware) {
-      const e = await this.inner.mkdir(encKey, mtime, ctime);
-      return cloneWithEnc(e);
-    }
-
-    // openssl-base64: folders stored plaintext — just call mkdir directly
     const e = await this.inner.mkdir(encKey, mtime, ctime);
     return cloneWithEnc(e);
   }
@@ -286,13 +287,14 @@ export class StorageEncrypt extends StorageBase {
     const e = await this.inner.writeFile(encKey, encContent, mtime, ctime);
     return {
       key,
-      keyRaw: e.keyRaw,
-      keyEnc: e.key!,
+      keyRaw:   e.keyRaw,
+      keyEnc:   e.key!,
       mtimeCli: e.mtimeCli,
       mtimeSvr: e.mtimeSvr,
-      size: undefined,
-      sizeEnc: e.size,
-      sizeRaw: e.sizeRaw,
+      size:     undefined,
+      sizeEnc:  e.size,
+      sizeRaw:  e.sizeRaw,
+      etag:     e.etag, // returned by StorageR2.writeFile via _headObject
     };
   }
 
@@ -387,42 +389,28 @@ export class StorageEncrypt extends StorageBase {
 
   private async _encryptContent(plain: ArrayBuffer): Promise<ArrayBuffer> {
     if (!this.hasPassword) return plain;
-    if (this.method === "openssl-base64") {
-      return openssl.encryptArrayBuffer(plain, this.password);
-    }
-    if (this.method === "rclone-base64") {
-      return this.rcloneCipher!.encryptContentByCallingWorker(plain);
-    }
+    if (this.method === "openssl-base64") return openssl.encryptArrayBuffer(plain, this.password);
+    if (this.method === "rclone-base64")  return this.rcloneCipher!.encryptContentByCallingWorker(plain);
     throw new Error(`Unsupported method: ${this.method}`);
   }
 
   private async _decryptContent(enc: ArrayBuffer): Promise<ArrayBuffer> {
     if (!this.hasPassword) return enc;
-    if (this.method === "openssl-base64") {
-      return openssl.decryptArrayBuffer(enc, this.password);
-    }
-    if (this.method === "rclone-base64") {
-      return this.rcloneCipher!.decryptContentByCallingWorker(enc);
-    }
+    if (this.method === "openssl-base64") return openssl.decryptArrayBuffer(enc, this.password);
+    if (this.method === "rclone-base64")  return this.rcloneCipher!.decryptContentByCallingWorker(enc);
     throw new Error(`Unsupported method: ${this.method}`);
   }
 
   private async _encryptName(plain: string): Promise<string> {
     if (!this.hasPassword) return plain;
-    // openssl-base64: folder names are stored plaintext
     if (isPlaintextPassthrough(plain, this.method)) return plain;
-    if (this.method === "openssl-base64") {
-      return openssl.encryptStringToBase64url(plain, this.password);
-    }
-    if (this.method === "rclone-base64") {
-      return this.rcloneCipher!.encryptNameByCallingWorker(plain);
-    }
+    if (this.method === "openssl-base64") return openssl.encryptStringToBase64url(plain, this.password);
+    if (this.method === "rclone-base64")  return this.rcloneCipher!.encryptNameByCallingWorker(plain);
     throw new Error(`Unsupported method: ${this.method}`);
   }
 
   private async _decryptName(enc: string): Promise<string> {
     if (!this.hasPassword) return enc;
-    // openssl-base64: folder names are stored plaintext — return as-is
     if (isPlaintextPassthrough(enc, this.method)) return enc;
     if (this.method === "openssl-base64") {
       if (enc.startsWith(openssl.MAGIC_PREFIX_BASE32)) {
@@ -437,15 +425,13 @@ export class StorageEncrypt extends StorageBase {
       }
       throw new Error(`Not an openssl-encrypted name: ${enc}`);
     }
-    if (this.method === "rclone-base64") {
-      return this.rcloneCipher!.decryptNameByCallingWorker(enc);
-    }
+    if (this.method === "rclone-base64") return this.rcloneCipher!.decryptNameByCallingWorker(enc);
     throw new Error(`Unsupported method: ${this.method}`);
   }
 
   private _estimateEncSize(plain: number): number {
     if (this.method === "openssl-base64") return openssl.getSizeFromOrigToEnc(plain);
-    if (this.method === "rclone-base64") return rclone.getSizeFromOrigToEnc(plain);
+    if (this.method === "rclone-base64")  return rclone.getSizeFromOrigToEnc(plain);
     throw new Error(`Unsupported method: ${this.method}`);
   }
 }

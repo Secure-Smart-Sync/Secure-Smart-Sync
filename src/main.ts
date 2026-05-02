@@ -1,14 +1,6 @@
 /**
  * main.ts
  * Obsidian plugin entry point for Secure-Smart-Sync (SSS).
- *
- * Responsibilities:
- *  - Register plugin lifecycle (onload / onunload)
- *  - Load & save settings
- *  - Build storage stack (local → encrypt → R2)
- *  - Trigger sync (manual, auto-interval, on-save debounce)
- *  - Update status bar
- *  - Register settings tab
  */
 
 import throttle from "lodash/throttle";
@@ -16,7 +8,6 @@ import { Notice, Plugin, type TAbstractFile, addIcon } from "obsidian";
 
 import {
   type InternalDB,
-  destroyDB,
   getAllPrevSyncRecords,
   getLastFailedSync,
   getLastSuccessSync,
@@ -39,18 +30,15 @@ import { decodeSettings, encodeSettings } from "./settings-persist";
 import { SSSSettingTab } from "./settings-tab";
 import {
   DEFAULT_SETTINGS,
+  type FileEntity,
   type PluginSettings,
   type SyncStats,
   type SyncTrigger,
 } from "./types";
 import { toText } from "./utils";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const PLUGIN_ID = "Secure-Smart-Sync";
 const SYNC_ICON_ID = "sss-sync-icon";
-
-// ─── Plugin ───────────────────────────────────────────────────────────────────
 
 export default class SSSPlugin extends Plugin {
   settings!: PluginSettings;
@@ -63,16 +51,12 @@ export default class SSSPlugin extends Plugin {
   private autoSyncTimer?: ReturnType<typeof setInterval>;
   private isSyncing = false;
 
-  // ── Lifecycle ───────────────────────────────────────────────────────────────
-
   async onload(): Promise<void> {
     this.logger = new PluginLogger("[SSS]");
 
-    // Load settings
     await this.loadSettings();
     this.logger.setLevel(this.settings.logLevel);
 
-    // Prepare DB
     const { db, vaultId } = await prepareDB(
       this.app.vault.adapter.getBasePath?.() ?? this.app.vault.getName(),
       this.settings._vaultId
@@ -80,10 +64,8 @@ export default class SSSPlugin extends Plugin {
     this.db = db;
     this.vaultId = vaultId;
 
-    // Store version for migration tracking
     await setPluginVersion(db, vaultId, this.manifest.version);
 
-    // Register sync icon
     addIcon(
       SYNC_ICON_ID,
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -94,49 +76,22 @@ export default class SSSPlugin extends Plugin {
       </svg>`
     );
 
-    // Status bar
     if (this.settings.showStatusBar) {
       this.statusBarEl = this.addStatusBarItem();
       this.setStatus("idle");
     }
 
-    // Commands
-    this.addCommand({
-      id: "sss-sync-now",
-      name: "Sync now",
-      callback: () => this.triggerSync("manual"),
-    });
+    this.addCommand({ id: "sss-sync-now", name: "Sync now", callback: () => this.triggerSync("manual") });
+    this.addCommand({ id: "sss-sync-dry-run", name: "Dry run (show what would change)", callback: () => this.triggerSync("dry_run") });
+    this.addCommand({ id: "sss-reset-sync-history", name: "Reset sync history (forces full re-sync)", callback: () => this.resetSyncHistory() });
 
-    this.addCommand({
-      id: "sss-sync-dry-run",
-      name: "Dry run (show what would change)",
-      callback: () => this.triggerSync("dry_run"),
-    });
-
-    this.addCommand({
-      id: "sss-reset-sync-history",
-      name: "Reset sync history (forces full re-sync)",
-      callback: () => this.resetSyncHistory(),
-    });
-
-    // Ribbon icon
     this.addRibbonIcon(SYNC_ICON_ID, "Secure-Smart-Sync", () => this.triggerSync("manual"));
-
-    // Settings tab
     this.addSettingTab(new SSSSettingTab(this.app, this));
-
-    // Auto-sync interval
     this.scheduleAutoSync();
-
-    // Sync-on-save
     this.registerOnSaveHandler();
 
-    // Initial sync after startup delay
     if (this.settings.initSyncDelayMs > 0) {
-      window.setTimeout(
-        () => this.triggerSync("init"),
-        this.settings.initSyncDelayMs
-      );
+      window.setTimeout(() => this.triggerSync("init"), this.settings.initSyncDelayMs);
     }
 
     this.logger.info(`Plugin loaded. Vault ID: ${vaultId}`);
@@ -146,8 +101,6 @@ export default class SSSPlugin extends Plugin {
     this.clearAutoSync();
     this.logger.info("Plugin unloaded.");
   }
-
-  // ── Settings ────────────────────────────────────────────────────────────────
 
   async loadSettings(): Promise<void> {
     const raw = await this.loadData();
@@ -160,8 +113,6 @@ export default class SSSPlugin extends Plugin {
     this.logger.setLevel(this.settings.logLevel);
     this.scheduleAutoSync();
   }
-
-  // ── Sync ────────────────────────────────────────────────────────────────────
 
   async triggerSync(trigger: SyncTrigger): Promise<void> {
     if (this.isSyncing) {
@@ -201,18 +152,10 @@ export default class SSSPlugin extends Plugin {
   private async runSync(dryRun: boolean): Promise<SyncStats> {
     const { settings } = this;
 
-    // Validate config
     if (!settings.r2.endpoint || !settings.r2.bucketName) {
       throw new Error("R2 endpoint or bucket name is not configured.");
     }
 
-    // Build storage stack
-    //
-    // IMPORTANT: Only the remote side is wrapped with encryption.
-    // Local files are always plaintext on disk — wrapping local with
-    // StorageEncrypt would cause plaintext file names to be fed into
-    // the decryptor, which is the root cause of the
-    // "Not an openssl-encrypted name" error.
     const local: StorageBase = new StorageLocal({
       vault: this.app.vault,
       pluginId: PLUGIN_ID,
@@ -229,15 +172,11 @@ export default class SSSPlugin extends Plugin {
       ? new StorageEncrypt(rawRemote, settings.encryptionPassword, settings.encryptionMethod)
       : rawRemote;
 
-    // Connectivity check — use the unwrapped remote so we don't
-    // need encryption to be valid just to test the connection.
-    const rawForCheck = remote instanceof StorageEncrypt ? rawRemote : remote;
-    const connected = await rawForCheck.checkConnection((err) => {
+    const connected = await rawRemote.checkConnection((err) => {
       this.logger.error("R2 connection failed:", toText(err));
     });
     if (!connected) throw new Error("Cannot connect to R2. Check your credentials and endpoint.");
 
-    // Password validation (quick probe)
     if (settings.encryptionPassword && remote instanceof StorageEncrypt) {
       const check = await remote.validatePassword();
       if (!check.ok) {
@@ -248,7 +187,6 @@ export default class SSSPlugin extends Plugin {
       }
     }
 
-    // Walk all three sources
     this.logger.info("Walking local, prevSync, remote…");
     const [localEntities, prevSyncEntities, remoteEntities] = await Promise.all([
       local.walk(),
@@ -260,13 +198,7 @@ export default class SSSPlugin extends Plugin {
       `Entities: local=${localEntities.length}, prev=${prevSyncEntities.length}, remote=${remoteEntities.length}`
     );
 
-    // Build sync plan — ignorePaths is applied inside buildMixedEntities
-    const mixed = buildMixedEntities(
-      localEntities,
-      prevSyncEntities,
-      remoteEntities,
-      settings.ignorePaths
-    );
+    const mixed = buildMixedEntities(localEntities, prevSyncEntities, remoteEntities, settings.ignorePaths);
     const tasks = buildTasks(mixed, settings);
 
     const actionable = tasks.filter((t) => t.kind !== "skip");
@@ -276,22 +208,14 @@ export default class SSSPlugin extends Plugin {
       const report = actionable.map((t) => `${t.kind}: ${t.key}`).join("\n");
       this.logger.info("Dry run plan:\n" + report);
       return {
-        filesUploaded: 0,
-        filesDownloaded: 0,
-        filesDeleted: 0,
-        filesSkipped: tasks.length,
-        conflictsResolved: 0,
-        errors: [],
-        startedAt: Date.now(),
-        finishedAt: Date.now(),
+        filesUploaded: 0, filesDownloaded: 0, filesDeleted: 0,
+        filesSkipped: tasks.length, conflictsResolved: 0,
+        errors: [], startedAt: Date.now(), finishedAt: Date.now(),
       };
     }
 
-    // Execute
     const stats = await executeTasks({
-      local,
-      remote,
-      tasks,
+      local, remote, tasks,
       concurrency: settings.r2.partsConcurrency ?? 5,
       logger: this.logger,
       onProgress: (_done, _total, _key) => {
@@ -299,45 +223,119 @@ export default class SSSPlugin extends Plugin {
       },
     });
 
-    // Update prevSync records.
-    // We re-stat the destination after the operation to capture the ACTUAL
-    // post-write metadata (mtime, size, etag) — storing the pre-operation
-    // snapshot would cause every file to appear "changed" on the next sync.
+    // ── Update prevSync records ────────────────────────────────────────────────
+    //
+    // The prevSync record for a file must contain:
+    //   mtimeCli  — from the LOCAL file (reliable, used for local-change detection)
+    //   etag      — from the REMOTE file (reliable, used for remote-change detection)
+    //
+    // Why ETag matters: encrypted remote files have size=undefined and
+    // mtimeCli=S3-upload-timestamp (not the original file mtime). Without ETag,
+    // isChanged() falls back to mtime which always differs → every file
+    // re-syncs every time.
+    //
+    // We also handle "no_change" tasks here for two cases:
+    //   A) File was already in sync but has NO prevSync record (newly added
+    //      to one side while plugin was not running).
+    //   B) File has a prevSync record from before the ETag fix (no etag stored)
+    //      → upgrade it silently so the next sync uses ETag comparison.
+    //
     for (const task of tasks) {
-      if (task.kind === "skip") continue;
+      // Folders don't need prevSync records
+      if (task.key.endsWith("/")) continue;
 
-      // Skip tasks that errored — don't update prevSync for them
-      if (stats.errors.some((e) => e.includes(task.key))) continue;
+      const errored = stats.errors.some((e) => e.includes(task.key));
 
+      // ── Deleted files ───────────────────────────────────────────────────────
       if (task.kind === "delete_local" || task.kind === "delete_remote") {
-        await deletePrevSyncRecord(this.db, this.vaultId, task.key);
+        if (!errored) await deletePrevSyncRecord(this.db, this.vaultId, task.key);
         continue;
       }
 
-      // For push/pull/conflict tasks, capture the state AFTER the operation.
-      // The "source of truth" is the local file — since local is always
-      // plaintext, we can stat it reliably without encryption concerns.
+      // ── Skipped (too large, no_change, equal) ───────────────────────────────
+      if (task.kind === "skip") {
+        if (errored) continue;
+
+        // Only act on files that are genuinely in sync on both sides
+        if (
+          (task.decision === "no_change" || task.decision === "equal") &&
+          task.entity.local &&
+          task.entity.remote
+        ) {
+          const prevRecord  = task.entity.prevSync;
+          const remoteEtag  = task.entity.remote.etag;
+
+          // Write/upgrade prevSync only if:
+          //   (a) no record exists yet, OR
+          //   (b) record exists but lacks the ETag (old record pre-fix)
+          const needsWrite = !prevRecord || (!prevRecord.etag && !!remoteEtag);
+          if (needsWrite) {
+            await upsertPrevSyncRecord(this.db, this.vaultId, {
+              key:      task.key,
+              keyRaw:   task.key,
+              mtimeCli: task.entity.local.mtimeCli,
+              size:     task.entity.local.size ?? task.entity.local.sizeRaw,
+              sizeRaw:  task.entity.local.sizeRaw ?? 0,
+              etag:     remoteEtag,
+              mtimeSvr: task.entity.remote.mtimeSvr,
+            } as FileEntity);
+          }
+        }
+        continue;
+      }
+
+      // ── Pushed / pulled files ───────────────────────────────────────────────
+      if (errored) continue;
+
       try {
+        // Re-stat local to get the definitive post-write mtime
         const freshLocal = await local.stat(task.key);
+
+        // Get remote ETag to anchor future remote comparisons.
+        // For push: the file was just uploaded — do a HEAD to get its new ETag.
+        //   (StorageEncrypt.stat is safe here: the encrypted key is in
+        //    cacheEncKeys from the writeFile call that just happened.)
+        // For pull: the remote entity we already have carries the correct ETag.
+        let remoteEtag: string | undefined = task.entity.remote?.etag;
+
+        if (task.kind === "push") {
+          try {
+            const freshRemote = await remote.stat(task.key);
+            remoteEtag = freshRemote.etag;
+          } catch (e) {
+            // Non-fatal: we'll fall back to using the pre-push remote ETag
+            // (which may be stale for a conflict-push but is still better than nothing)
+            this.logger.warn(
+              `[SSS] Could not stat remote after push for ${task.key} — ETag may not be stored:`,
+              (e as Error).message
+            );
+          }
+        }
+
         await upsertPrevSyncRecord(this.db, this.vaultId, {
           ...freshLocal,
-          key: task.key,
+          key:    task.key,
           keyRaw: task.key,
+          // Attach the remote ETag so isChanged(remote, prevSync) short-circuits
+          // on the next sync instead of falling back to unreliable mtime.
+          ...(remoteEtag !== undefined ? { etag: remoteEtag } : {}),
         });
-      } catch {
-        // Fallback: if stat fails (e.g. file was a delete + re-pull race),
-        // use the original entity
-        const entity = task.entity.local ?? task.entity.remote;
+      } catch (err) {
+        this.logger.warn(`[SSS] Failed to update prevSync for ${task.key}:`, (err as Error).message);
+        // Fallback: use the pre-operation snapshot (less accurate but avoids data loss)
+        const entity = task.kind === "push"
+          ? (task.entity.local ?? task.entity.remote)
+          : (task.entity.remote ?? task.entity.local);
         if (entity) {
           await upsertPrevSyncRecord(this.db, this.vaultId, {
             ...entity,
             key: task.key,
+            keyRaw: task.key,
           });
         }
       }
     }
 
-    // Cleanup rclone workers
     if (remote instanceof StorageEncrypt) await remote.closeResources();
 
     return stats;
@@ -358,8 +356,6 @@ export default class SSSPlugin extends Plugin {
     return parts.length ? parts.join(", ") : "up to date";
   }
 
-  // ── Auto-sync ────────────────────────────────────────────────────────────────
-
   private scheduleAutoSync(): void {
     this.clearAutoSync();
     const ms = this.settings.autoSyncIntervalMs;
@@ -376,8 +372,6 @@ export default class SSSPlugin extends Plugin {
     }
   }
 
-  // ── On-save ──────────────────────────────────────────────────────────────────
-
   private registerOnSaveHandler(): void {
     const debounceMs = this.settings.syncOnSaveDebounceMs;
     if (debounceMs <= 0) return;
@@ -392,15 +386,9 @@ export default class SSSPlugin extends Plugin {
     );
   }
 
-  // ── Status bar ───────────────────────────────────────────────────────────────
-
   private setStatus(state: "idle" | "syncing" | "error"): void {
     if (!this.statusBarEl) return;
-    const icons: Record<string, string> = {
-      idle:    "☁️",
-      syncing: "🔄",
-      error:   "⚠️",
-    };
+    const icons: Record<string, string> = { idle: "☁️", syncing: "🔄", error: "⚠️" };
     this.statusBarEl.setText(`${icons[state]} SSS`);
   }
 
