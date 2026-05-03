@@ -195,8 +195,6 @@ Change detection uses **ETags first** (S3 content hashes, definitive), falling b
 
 ---
 
-## License
-
 ## License & Branding
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
@@ -209,7 +207,3 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 > While you are free to use, modify, and distribute the software code under the terms of the MIT License, this does not grant permission to use the project's name, logo, or trademarks in a way that suggests endorsement or original authorship. All rights regarding the visual identity and naming of this project are reserved.
 
 ---
-
-## Author
-
-Made by [Sen](https://github.com/xensenx).
