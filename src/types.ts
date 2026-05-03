@@ -170,12 +170,23 @@ export interface PluginSettings {
   /** Timestamp of last successful sync (ms since epoch). Displayed in settings UI. */
   lastSyncedAt?: number;
 
+  /**
+   * Pairing relay settings.
+   * By default the plugin uses the developer-hosted relay (DEFAULT_RELAY_URL).
+   * Users who self-host sss-relay can toggle useCustomRelay and supply their own URL.
+   */
+  useCustomRelay: boolean;
+  customRelayUrl: string;
+
   /** Internal: randomly generated vault identifier (used as DB namespace) */
   _vaultId?: string;
 
   /** Internal: whether user accepted the sync algorithm notice */
   _acceptedSyncNotice?: boolean;
 }
+
+/** Developer-hosted relay used by default. Open-source: https://github.com/xensenx/sss-relay */
+export const DEFAULT_RELAY_URL = "https://sss-relay.xsen1947.workers.dev";
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   r2: DEFAULT_R2_CONFIG,
@@ -196,6 +207,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   syncConfigDir: false,
   showStatusBar: true,
   logLevel: "info",
+
+  useCustomRelay: false,
+  customRelayUrl: "",
 };
 
 // ─── Sync trigger ─────────────────────────────────────────────────────────────
