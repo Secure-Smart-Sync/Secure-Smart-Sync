@@ -16,7 +16,6 @@
   Your files never leave your device unencrypted. No third-party servers. No subscriptions.
 </p>
 
----
 
 ## What it does
 
@@ -35,7 +34,6 @@ Secure-Smart-Sync (SSS) syncs your Obsidian vault to a Cloudflare R2 bucket you 
 - **Ignore patterns** — glob-based path exclusions
 - **Status bar** — live sync state indicator
 
----
 
 ## Requirements
 
@@ -43,7 +41,6 @@ Secure-Smart-Sync (SSS) syncs your Obsidian vault to a Cloudflare R2 bucket you 
 - A [Cloudflare account](https://dash.cloudflare.com) (free tier is sufficient)
 - A Cloudflare R2 bucket with an API token that has read and write access
 
----
 
 ## Setup
 
@@ -85,7 +82,6 @@ Open **Settings → Secure-Smart-Sync** and fill in:
 
 Hit **Test Connection** to confirm everything works, then click the sync icon in the ribbon or run **Sync now** from the command palette.
 
----
 
 ## Encryption
 
@@ -99,7 +95,6 @@ Uses Salsa20+Poly1305, compatible with rclone's crypt remote. Both file contents
 
 **Important:** if you change or lose your encryption password, your remote files become permanently unreadable. Store your password somewhere safe.
 
----
 
 ## Pairing a New Device
 
@@ -111,7 +106,6 @@ Instead of retyping all your credentials on a second device:
 
 All credentials are imported automatically. This uses an end-to-end encrypted relay — the pairing server only ever sees an AES-GCM encrypted blob and never your plaintext credentials. The relay code is open source at [github.com/xensenx/sss-relay](https://github.com/xensenx/sss-relay). If you prefer to self-host the relay, see Advanced settings.
 
----
 
 ## Sync Behaviour
 
@@ -131,7 +125,6 @@ SSS uses a **three-way diff**: it compares the current local state, the current 
 
 Change detection uses **ETags first** (S3 content hashes, definitive), falling back to plaintext size and then modification time with a 1-second tolerance.
 
----
 
 ## Settings Reference
 
@@ -174,7 +167,6 @@ Change detection uses **ETags first** (S3 content hashes, definitive), falling b
 | Sync .obsidian Config Directory | Include Obsidian config files in sync |
 | Show Status Bar | Toggle the sync status indicator |
 
----
 
 ## Commands
 
@@ -184,7 +176,6 @@ Change detection uses **ETags first** (S3 content hashes, definitive), falling b
 | `SSS: Dry run` | Show what would change without making any changes |
 | `SSS: Reset sync history` | Clears prevSync records — next sync does a full comparison |
 
----
 
 ## Privacy
 
@@ -193,7 +184,6 @@ Change detection uses **ETags first** (S3 content hashes, definitive), falling b
 - Pairing blobs are deleted immediately on first retrieval and auto-expire after 10 minutes regardless.
 - No analytics, no telemetry, no account required.
 
----
 
 ## Credits & Acknowledgements
 
@@ -217,7 +207,6 @@ Remotely Save’s open-source components are licensed under the Apache License 2
 
 This project would have taken significantly longer to prototype without their earlier open-source work, and they deserve proper credit for that contribution.
 
----
 
 ## License & Branding
 
@@ -230,4 +219,3 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 >
 > While you are free to use, modify, and distribute the software code under the terms of the MIT License, this does not grant permission to use the project's name, logo, or trademarks in a way that suggests endorsement or original authorship. All rights regarding the visual identity and naming of this project are reserved.
 
----
