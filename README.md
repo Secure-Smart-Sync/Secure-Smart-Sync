@@ -195,20 +195,6 @@ Change detection uses **ETags first** (S3 content hashes, definitive), falling b
 
 ---
 
-## Building from Source
-
-```bash
-git clone https://github.com/xensenx/Secure-Smart-Sync
-cd Secure-Smart-Sync
-npm install
-npm run build   # production build → main.js
-npm run dev     # watch mode
-```
-
-Requires Node.js 18+. Uses esbuild (not webpack). Output is a single `main.js`.
-
----
-
 ## License
 
 ## License & Branding
