@@ -201,7 +201,7 @@ Over time, Secure-Smart-Sync was heavily rewritten and evolved into its own inde
 
 The primary value of Remotely Save was helping me learn faster during the early stages of development and better understand the problem space.
 
-No code from Remotely Save’s `/pro` directory was used.
+code from Remotely Save’s `/pro` directory was **NOT** used.
 
 Remotely Save’s open-source components are licensed under the Apache License 2.0. Their original repository and full licensing details can be found in their project repository.
 
