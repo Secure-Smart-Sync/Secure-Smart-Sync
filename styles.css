@@ -18,7 +18,7 @@
 .sss-section-desc {
   font-size: var(--font-small);
   color: var(--text-muted);
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
 }
 
 /* Inline connection-test result */
@@ -34,7 +34,7 @@
 .sss-last-synced {
   font-size: var(--font-small);
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 /* Password strength hint */
@@ -44,59 +44,107 @@
   margin-top: 4px;
 }
 
-/* Credential import textarea */
-.sss-import-textarea {
-  width: 100%;
-  min-height: 72px;
-  resize: vertical;
+/* ── Pair Devices — receive row (code input + button) ───────────────────── */
+
+.sss-receive-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.sss-code-input {
+  flex: 1;
   font-family: var(--font-monospace);
-  font-size: var(--font-small);
-  padding: 6px 8px;
+  font-size: var(--font-ui-medium);
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
   border-radius: var(--radius-s);
   border: 1px solid var(--background-modifier-border);
   background: var(--background-primary);
   color: var(--text-normal);
-  box-sizing: border-box;
-  margin-bottom: 8px;
+  min-width: 0;
 }
 
-/* ── QR Code Modal ──────────────────────────────────────────────────────── */
+.sss-receive-btn {
+  white-space: nowrap;
+  padding: 6px 14px;
+}
 
-.sss-qr-modal .modal-content {
-  max-width: 420px;
+/* Status line under the receive row */
+.sss-receive-status {
+  font-size: var(--font-small);
+  min-height: 1.2em;
+  margin-bottom: 8px;
+}
+.sss-receive-ok  { color: var(--text-success); font-weight: 600; }
+.sss-receive-err { color: var(--text-error); }
+
+/* ── Pairing Send Modal ──────────────────────────────────────────────────── */
+
+.sss-pairing-send-modal .modal-content {
+  max-width: 400px;
   text-align: center;
 }
 
-.sss-qr-warning {
+/* Large code display */
+.sss-pairing-code-wrap {
+  margin: 20px auto 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sss-pairing-code {
+  font-family: var(--font-monospace);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-accent);
+  background: var(--background-secondary);
+  padding: 12px 20px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  user-select: all;
+  display: block;
+}
+
+.sss-pairing-copy-btn {
   font-size: var(--font-small);
-  color: var(--text-warning, var(--text-error));
-  background: var(--background-modifier-error-hover, rgba(255,80,80,0.08));
+  padding: 4px 12px;
   border-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.sss-pairing-copy-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* Countdown timer */
+.sss-pairing-countdown {
+  font-size: var(--font-small);
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Calm, muted security note (shared with QR modal if ever used) */
+.sss-qr-note {
+  font-size: var(--font-small);
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-left: 3px solid var(--background-modifier-border);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
   padding: 8px 12px;
   margin-bottom: 16px;
   text-align: left;
+  line-height: 1.5;
 }
 
-.sss-qr-wrap {
-  display: flex;
-  justify-content: center;
-  margin: 0 auto 20px;
-}
-
-/* Make the generated SVG fill its container but cap at 300px */
-.sss-qr-wrap svg {
-  width: 280px;
-  height: 280px;
-  border-radius: var(--radius-s);
-  background: #fff;  /* QR always needs white background regardless of theme */
-  padding: 8px;
-}
-
-.sss-qr-steps {
-  text-align: left;
-  font-size: var(--font-small);
-  color: var(--text-muted);
-  margin: 0 0 20px 0;
-  padding-left: 20px;
-  line-height: 1.8;
+.sss-qr-note strong {
+  color: var(--text-normal);
 }
