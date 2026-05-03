@@ -1,6 +1,15 @@
 # Secure-Smart-Sync
 
-<img src="assets/icon_transparent.png" width="200" alt="icon">
+<div align="center">
+  <picture>
+    <!-- Displayed when GitHub is in Light (White) Mode -->
+    <source media="(prefers-color-scheme: light)" srcset="assets/icon_black_transparent.svg">
+    <!-- Displayed when GitHub is in Dark Mode -->
+    <source media="(prefers-color-scheme: dark)" srcset="assets/icon_white_transparent.svg">
+    <!-- Fallback image -->
+    <img src="assets/icon_white_transparent.svg" width="200" alt="icon">
+  </picture>
+</div>
 
 <p align="center">
   <strong>Privacy-first Obsidian vault sync via Cloudflare R2 with client-side encryption.</strong><br>
