@@ -10,6 +10,7 @@ import { App, Modal, Notice, PluginSettingTab, Setting } from "obsidian";
 import type SSSPlugin from "./main";
 import { StorageR2 } from "./storage-r2";
 import { exportCredentialBundle, importCredentialBundle } from "./credentials-transfer";
+import { createPairingSlot, consumePairingSlot, checkRelayHealth } from "./pairing-relay";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -24,44 +25,82 @@ function formatSyncDate(ms: number): string {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 
-// ─── QR Code Modal ────────────────────────────────────────────────────────────
+// ─── Pairing Send Modal ───────────────────────────────────────────────────────
+//
+// Shown on the device that already has credentials (sender).
+// Displays the generated pairing code with a live countdown.
 
-class QRModal extends Modal {
-  private readonly svgString: string;
+class PairingSendModal extends Modal {
+  private pairingCode: string;
+  private expiresInSeconds: number;
+  private countdownEl?: HTMLElement;
+  private intervalId?: ReturnType<typeof setInterval>;
 
-  constructor(app: App, svgString: string) {
+  constructor(app: App, pairingCode: string, expiresInSeconds: number) {
     super(app);
-    this.svgString = svgString;
+    this.pairingCode      = pairingCode;
+    this.expiresInSeconds = expiresInSeconds;
   }
 
   onOpen(): void {
     const { contentEl } = this;
-    contentEl.addClass("sss-qr-modal");
+    contentEl.addClass("sss-pairing-send-modal");
 
-    contentEl.createEl("h2", { text: "Scan to Set Up Another Device" });
+    contentEl.createEl("h2", { text: "Pair Another Device" });
 
     contentEl.createEl("p", {
-      text: "⚠️ This QR code contains your full credentials including secret key and encryption password. Do not photograph or share it.",
-      cls: "sss-qr-warning",
+      text: "Enter this code on the other device under Settings → Pair Devices → Enter Code.",
+      cls: "sss-section-desc",
     });
 
-    // Render the QR SVG
-    const qrWrap = contentEl.createDiv({ cls: "sss-qr-wrap" });
-    qrWrap.innerHTML = this.svgString;
+    // Large code display
+    const codeWrap = contentEl.createDiv({ cls: "sss-pairing-code-wrap" });
+    const codeEl   = codeWrap.createEl("span", {
+      text: this.pairingCode,
+      cls:  "sss-pairing-code",
+    });
 
-    // Step-by-step instructions
-    const steps = contentEl.createEl("ol", { cls: "sss-qr-steps" });
-    steps.createEl("li", { text: "Scan the QR code with your phone's camera app (outside Obsidian)." });
-    steps.createEl("li", { text: "The camera app will show the credential text — copy all of it." });
-    steps.createEl("li", { text: "On your phone: open SSS Settings → Device Setup → Import Credentials → paste → Import." });
+    // Copy button beneath the code
+    const copyBtn = codeWrap.createEl("button", {
+      text: "Copy Code",
+      cls:  "sss-pairing-copy-btn",
+    });
+    copyBtn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(this.pairingCode);
+      copyBtn.textContent = "Copied ✓";
+      setTimeout(() => { copyBtn.textContent = "Copy Code"; }, 2000);
+    });
+
+    // Calm security note
+    const note = contentEl.createDiv({ cls: "sss-qr-note" });
+    note.createEl("strong", { text: "Keep this private. " });
+    note.appendText("This code grants access to your sync credentials. Only enter it on a device you own.");
+
+    // Countdown
+    this.countdownEl = contentEl.createEl("p", { cls: "sss-pairing-countdown" });
+    this.updateCountdown();
+    this.intervalId = setInterval(() => {
+      this.expiresInSeconds--;
+      if (this.expiresInSeconds <= 0) {
+        this.close();
+      } else {
+        this.updateCountdown();
+      }
+    }, 1000);
 
     new Setting(contentEl)
-      .addButton((btn) =>
-        btn.setButtonText("Close").setCta().onClick(() => this.close())
-      );
+      .addButton((btn) => btn.setButtonText("Done").setCta().onClick(() => this.close()));
+  }
+
+  private updateCountdown(): void {
+    if (!this.countdownEl) return;
+    const m = Math.floor(this.expiresInSeconds / 60);
+    const s = String(this.expiresInSeconds % 60).padStart(2, "0");
+    this.countdownEl.textContent = `Expires in ${m}:${s}`;
   }
 
   onClose(): void {
+    if (this.intervalId !== undefined) clearInterval(this.intervalId);
     this.contentEl.empty();
   }
 }
@@ -81,7 +120,7 @@ export class SSSSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Secure-Smart-Sync Settings" });
+    containerEl.createEl("h2", { text: "Secure-Smart-Sync" });
 
     // ── Last-synced timestamp ─────────────────────────────────────────────────
 
@@ -93,87 +132,119 @@ export class SSSSettingTab extends PluginSettingTab {
       cls: "sss-last-synced",
     });
 
-    // ── Device Setup (QR export / import) ─────────────────────────────────────
+    // ── Pair Devices ──────────────────────────────────────────────────────────
 
-    containerEl.createEl("h3", { text: "Device Setup" });
+    containerEl.createEl("h3", { text: "Pair Devices" });
     containerEl.createEl("p", {
-      text: "Transfer your connection credentials to another device without retyping. Generate a QR on this device and scan it on the other.",
+      text: "Set up another device instantly. Generate a code here, enter it there — no retyping credentials.",
       cls: "sss-section-desc",
     });
 
-    // Export
-    new Setting(containerEl)
-      .setName("Export to Another Device")
-      .setDesc("Generates a QR code containing all connection settings. The QR is shown only in the modal and never saved to disk.")
-      .addButton((btn) =>
-        btn.setButtonText("Generate QR Code").onClick(async () => {
-          const { endpoint, bucketName, accessKeyId, secretAccessKey } = this.plugin.settings.r2;
-          if (!endpoint || !bucketName || !accessKeyId || !secretAccessKey) {
-            new Notice("⚠️ Fill in all R2 credentials before generating a QR code.");
-            return;
-          }
+    // ── Send side: Generate Code ──────────────────────────────────────────────
 
-          btn.setDisabled(true);
-          btn.setButtonText("Generating…");
+    const sendSetting = new Setting(containerEl)
+      .setName("Share credentials")
+      .setDesc("Generates a short pairing code valid for 10 minutes. Enter it on the other device to import all credentials.");
 
-          try {
-            // qrcode is a bundled npm package — run: npm install qrcode @types/qrcode
-            const QRCode = (await import("qrcode" as any)).default ?? (await import("qrcode" as any));
-            const json = exportCredentialBundle(this.plugin.settings);
-            const svg: string = await QRCode.toString(json, {
-              type: "svg",
-              errorCorrectionLevel: "M",
-              margin: 2,
-              width: 300,
-            });
-            new QRModal(this.app, svg).open();
-          } catch (e) {
-            const err = e as Error;
-            if (err.message?.includes("Cannot find module") || err.message?.includes("qrcode")) {
-              new Notice("QR generation failed: run  npm install qrcode @types/qrcode  in sss env, then rebuild.");
-            } else {
-              new Notice(`QR generation failed: ${err.message}`);
-            }
-            console.error("[SSS] QR generation error:", e);
-          } finally {
-            btn.setDisabled(false);
-            btn.setButtonText("Generate QR Code");
-          }
-        })
-      );
+    sendSetting.addButton((btn) =>
+      btn.setButtonText("Generate Code").setCta().onClick(async () => {
+        const { endpoint, bucketName, accessKeyId, secretAccessKey } = this.plugin.settings.r2;
+        if (!endpoint || !bucketName || !accessKeyId || !secretAccessKey) {
+          new Notice("Fill in all R2 credentials before pairing.");
+          return;
+        }
 
-    // Import
-    new Setting(containerEl)
-      .setName("Import Credentials")
-      .setDesc("Paste the text from a scanned QR code below, then tap Import. All connection fields will be populated automatically.");
+        const relayUrl = (this.plugin.settings as any).relayUrl as string | undefined;
+        if (!relayUrl) {
+          new Notice("Set a Relay URL in Advanced settings first.");
+          return;
+        }
 
-    const importTextarea = containerEl.createEl("textarea", {
-      cls: "sss-import-textarea",
-      placeholder: 'Paste credential text here (from QR scan)…',
+        btn.setDisabled(true);
+        btn.setButtonText("Generating…");
+
+        try {
+          const credJson = exportCredentialBundle(this.plugin.settings);
+          const { pairingCode, expiresInSeconds } = await createPairingSlot(credJson, { relayUrl });
+          new PairingSendModal(this.app, pairingCode, expiresInSeconds).open();
+        } catch (e) {
+          new Notice(`Pairing failed: ${(e as Error).message}`);
+        } finally {
+          btn.setDisabled(false);
+          btn.setButtonText("Generate Code");
+        }
+      })
+    );
+
+    // ── Receive side: Enter Code ──────────────────────────────────────────────
+
+    const receiveSetting = new Setting(containerEl)
+      .setName("Import from code")
+      .setDesc("Enter the pairing code shown on the other device.");
+
+    // Inline code input + Import button in one row
+    const receiveRow = containerEl.createDiv({ cls: "sss-receive-row" });
+
+    const codeInput = receiveRow.createEl("input", {
+      type: "text",
+      cls:  "sss-code-input",
+      placeholder: "xxxxxx-xxxxxxxx",
+    } as DomElementInfo & { type: string });
+    (codeInput as HTMLInputElement).maxLength = 15;
+    (codeInput as HTMLInputElement).spellcheck = false;
+    (codeInput as HTMLInputElement).autocomplete = "off";
+
+    const importBtn = receiveRow.createEl("button", {
+      text: "Import",
+      cls:  "mod-cta sss-receive-btn",
     });
 
-    new Setting(containerEl)
-      .addButton((btn) =>
-        btn.setButtonText("Import").onClick(async () => {
-          const raw = importTextarea.value.trim();
-          if (!raw) {
-            new Notice("Paste the credential text first.");
-            return;
-          }
-          try {
-            const imported = importCredentialBundle(raw);
-            Object.assign(this.plugin.settings.r2, imported.r2);
-            this.plugin.settings.encryptionPassword = imported.encryptionPassword;
-            this.plugin.settings.encryptionMethod    = imported.encryptionMethod;
-            await this.plugin.saveSettings();
-            importTextarea.value = "";
-            new Notice("✅ Credentials imported. Verify settings and tap Test Connection.");
-            this.display(); // refresh to show populated fields
-          } catch (e) {
-            new Notice(`❌ Import failed: ${(e as Error).message}`);
-          }
-        })
-      );
+    const receiveStatus = containerEl.createDiv({ cls: "sss-receive-status" });
+
+    const doImport = async () => {
+      const code = (codeInput as HTMLInputElement).value.trim();
+      if (!code) {
+        receiveStatus.textContent = "Enter the pairing code first.";
+        receiveStatus.className   = "sss-receive-status sss-receive-err";
+        return;
+      }
+
+      const relayUrl = (this.plugin.settings as any).relayUrl as string | undefined;
+      if (!relayUrl) {
+        receiveStatus.textContent = "Set a Relay URL in Advanced settings first.";
+        receiveStatus.className   = "sss-receive-status sss-receive-err";
+        return;
+      }
+
+      importBtn.disabled = true;
+      (importBtn as HTMLButtonElement).textContent = "Importing…";
+      receiveStatus.textContent = "";
+      receiveStatus.className   = "sss-receive-status";
+
+      try {
+        const credJson = await consumePairingSlot(code, { relayUrl });
+        const imported = importCredentialBundle(credJson);
+        Object.assign(this.plugin.settings.r2, imported.r2);
+        this.plugin.settings.encryptionPassword = imported.encryptionPassword;
+        this.plugin.settings.encryptionMethod   = imported.encryptionMethod;
+        await this.plugin.saveSettings();
+        (codeInput as HTMLInputElement).value = "";
+        receiveStatus.textContent = "✅ Credentials imported. Test your connection below.";
+        receiveStatus.className   = "sss-receive-status sss-receive-ok";
+        this.display();
+      } catch (e) {
+        receiveStatus.textContent = `❌ ${(e as Error).message}`;
+        receiveStatus.className   = "sss-receive-status sss-receive-err";
+      } finally {
+        importBtn.disabled = false;
+        (importBtn as HTMLButtonElement).textContent = "Import";
+      }
+    };
+
+    importBtn.addEventListener("click", doImport);
+    (codeInput as HTMLInputElement).addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Enter") doImport();
+    });
 
     // ── R2 Connection ─────────────────────────────────────────────────────────
 
@@ -273,7 +344,7 @@ export class SSSSettingTab extends PluginSettingTab {
       .setName("Encryption Password")
       .setDesc(
         "Files are encrypted before leaving your device. Leave blank to disable encryption. " +
-        "⚠️ If you change or lose this password, your remote files will be unreadable."
+        "If you change or lose this password, your remote files will be unreadable."
       )
       .addText((text) => {
         text
@@ -407,6 +478,32 @@ export class SSSSettingTab extends PluginSettingTab {
     // ── Advanced ──────────────────────────────────────────────────────────────
 
     containerEl.createEl("h3", { text: "Advanced" });
+
+    // Relay URL — needed for Pair Devices to work
+    const relaySetting = new Setting(containerEl)
+      .setName("Pairing Relay URL")
+      .setDesc("URL of your deployed sss-relay Cloudflare Worker. Required for Pair Devices.")
+      .addText((text) =>
+        text
+          .setPlaceholder("https://sss-relay.yourname.workers.dev")
+          .setValue((this.plugin.settings as any).relayUrl ?? "")
+          .onChange(async (v) => {
+            (this.plugin.settings as any).relayUrl = v.trim();
+            await this.plugin.saveSettings();
+          })
+      )
+      .addButton((btn) =>
+        btn.setButtonText("Test").onClick(async () => {
+          const url = (this.plugin.settings as any).relayUrl as string | undefined;
+          if (!url) { new Notice("Enter a Relay URL first."); return; }
+          btn.setDisabled(true);
+          btn.setButtonText("Testing…");
+          const ok = await checkRelayHealth(url);
+          btn.setDisabled(false);
+          btn.setButtonText("Test");
+          new Notice(ok ? "✅ Relay is reachable." : "❌ Could not reach relay. Check the URL.");
+        })
+      );
 
     new Setting(containerEl)
       .setName("Log Level")
