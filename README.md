@@ -197,7 +197,7 @@ Change detection uses **ETags first** (S3 content hashes, definitive), falling b
 
 ## Credits & Acknowledgements
 
-:contentReference[oaicite:0]{index=0} played an important role in the early foundation of Secure-Smart-Sync.
+[Remotely Save](https://github.com/remotely-save/remotely-save) played an important role in the early foundation of Secure-Smart-Sync.
 
 During the earliest prototyping phase, its S3-compatible storage implementation and a few reference files helped me better understand how sync systems interact with object storage and accelerated early experimentation.
 
@@ -209,14 +209,13 @@ Over time, Secure-Smart-Sync was heavily rewritten and evolved into its own inde
 - conflict handling  
 - privacy-first infrastructure design  
 
-The primary value of :contentReference[oaicite:1]{index=1} was helping me learn faster during the early stages of development and better understand the problem space.
+The primary value of Remotely Save was helping me learn faster during the early stages of development and better understand the problem space.
 
-No code from :contentReference[oaicite:2]{index=2}’s `/pro` directory was used.
+No code from Remotely Save’s `/pro` directory was used.
 
-:contentReference[oaicite:3]{index=3}’s open-source components are licensed under :contentReference[oaicite:4]{index=4}. Their original repository and full licensing details can be found in their project repository.
+Remotely Save’s open-source components are licensed under the Apache License 2.0. Their original repository and full licensing details can be found in their project repository.
 
 This project would have taken significantly longer to prototype without their earlier open-source work, and they deserve proper credit for that contribution.
-
 ---
 
 ## License & Branding
