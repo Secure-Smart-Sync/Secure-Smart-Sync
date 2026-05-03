@@ -211,7 +211,16 @@ Requires Node.js 18+. Uses esbuild (not webpack). Output is a single `main.js`.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+## License & Branding
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+> [!IMPORTANT]
+> **Trademark & Branding Notice**
+>
+> The **Secure-Smart-Sync** name, logo, and associated branding assets are copyright © **Sen** and are **not** covered by the MIT License. 
+>
+> While you are free to use, modify, and distribute the software code under the terms of the MIT License, this does not grant permission to use the project's name, logo, or trademarks in a way that suggests endorsement or original authorship. All rights regarding the visual identity and naming of this project are reserved.
 
 ---
 
