@@ -195,6 +195,30 @@ Change detection uses **ETags first** (S3 content hashes, definitive), falling b
 
 ---
 
+## Credits & Acknowledgements
+
+:contentReference[oaicite:0]{index=0} played an important role in the early foundation of Secure-Smart-Sync.
+
+During the earliest prototyping phase, its S3-compatible storage implementation and a few reference files helped me better understand how sync systems interact with object storage and accelerated early experimentation.
+
+Over time, Secure-Smart-Sync was heavily rewritten and evolved into its own independent architecture. Most of the original reference code was eventually replaced as the project moved toward a very different design focused on:
+
+- client-side encryption  
+- three-way diff synchronization  
+- encrypted device pairing relay  
+- conflict handling  
+- privacy-first infrastructure design  
+
+The primary value of :contentReference[oaicite:1]{index=1} was helping me learn faster during the early stages of development and better understand the problem space.
+
+No code from :contentReference[oaicite:2]{index=2}’s `/pro` directory was used.
+
+:contentReference[oaicite:3]{index=3}’s open-source components are licensed under :contentReference[oaicite:4]{index=4}. Their original repository and full licensing details can be found in their project repository.
+
+This project would have taken significantly longer to prototype without their earlier open-source work, and they deserve proper credit for that contribution.
+
+---
+
 ## License & Branding
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
