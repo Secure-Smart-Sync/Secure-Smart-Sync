@@ -216,6 +216,7 @@ No code from Remotely Save’s `/pro` directory was used.
 Remotely Save’s open-source components are licensed under the Apache License 2.0. Their original repository and full licensing details can be found in their project repository.
 
 This project would have taken significantly longer to prototype without their earlier open-source work, and they deserve proper credit for that contribution.
+
 ---
 
 ## License & Branding
