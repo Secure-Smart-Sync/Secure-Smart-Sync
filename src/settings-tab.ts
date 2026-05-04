@@ -69,7 +69,7 @@ class PairingSendModal extends Modal {
     const copyBtn = codeWrap.createEl("button", { text: "Copy Code", cls: "sss-pairing-copy-btn" });
     copyBtn.addEventListener("click", async () => {
       await navigator.clipboard.writeText(this.pairingCode);
-      copyBtn.textContent = "Copied ✓";
+      copyBtn.textContent = "Copied!";
       setTimeout(() => { copyBtn.textContent = "Copy Code"; }, 2000);
     });
 
@@ -200,11 +200,11 @@ export class SSSSettingTab extends PluginSettingTab {
         this.plugin.settings.encryptionMethod   = imported.encryptionMethod;
         await this.plugin.saveSettings();
         (codeInput as HTMLInputElement).value = "";
-        receiveStatus.textContent = "✅ Credentials imported. Test your connection below.";
+        receiveStatus.textContent = "Credentials imported. Test your connection below.";
         receiveStatus.className   = "sss-receive-status sss-receive-ok";
         this.display();
       } catch (e) {
-        receiveStatus.textContent = `❌ ${(e as Error).message}`;
+        receiveStatus.textContent = (e as Error).message;
         receiveStatus.className   = "sss-receive-status sss-receive-err";
       } finally {
         importBtn.disabled = false;
@@ -291,8 +291,8 @@ export class SSSSettingTab extends PluginSettingTab {
           const ok = await r2.checkConnection((err) => { errorMsg = (err as Error).message ?? String(err); });
           btn.setDisabled(false);
           btn.setButtonText("Test");
-          if (ok) { this._setConnectionResult("✅ Connected successfully!", "sss-conn-ok"); }
-          else     { this._setConnectionResult(`❌ Failed: ${errorMsg}`, "sss-conn-err"); }
+          if (ok) { this._setConnectionResult("Connected successfully", "sss-conn-ok"); }
+          else     { this._setConnectionResult(`Failed: ${errorMsg}`, "sss-conn-err"); }
         })
       );
 
@@ -406,6 +406,28 @@ export class SSSSettingTab extends PluginSettingTab {
 
     containerEl.createEl("h3", { text: "Automation" });
 
+    // Notification behaviour note
+    const autoNote = containerEl.createDiv({ cls: "sss-inline-note sss-auto-note" });
+    autoNote.createEl("strong", { text: "Non-intrusive by default. " });
+    autoNote.appendText(
+      "Auto-sync, on-save, and on-idle triggers do not show pop-up toasts, " +
+      "keeping your writing session uninterrupted. " +
+      "On mobile, a small floating indicator shows sync state instead. " +
+      "Toggle the option below to revert to toast notifications."
+    );
+
+    new Setting(containerEl)
+      .setName("Use toast notifications for auto-sync")
+      .setDesc("When on, all sync triggers show pop-up toasts and the floating mobile indicator is hidden.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.useToastForAutoSync).onChange(async (v) => {
+          this.plugin.settings.useToastForAutoSync = v;
+          await this.plugin.saveSettings();
+          (this.plugin as any).teardownMobileIndicator?.();
+          if (!v) (this.plugin as any).mountMobileIndicator?.();
+        })
+      );
+
     new Setting(containerEl)
       .setName("Auto-Sync Interval (minutes)")
       .setDesc("0 = disabled.")
@@ -421,13 +443,26 @@ export class SSSSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Sync on Save Debounce (seconds)")
-      .setDesc("Triggers sync N seconds after a file is saved. 0 = disabled.")
+      .setDesc("Triggers sync N seconds after a file is saved. 0 = disabled. Requires plugin reload if changed.")
       .addText((text) => {
         const secs = this.plugin.settings.syncOnSaveDebounceMs > 0
           ? String(this.plugin.settings.syncOnSaveDebounceMs / 1000) : "0";
         text.setPlaceholder("0").setValue(secs).onChange(async (v) => {
           const n = parseFloat(v);
           this.plugin.settings.syncOnSaveDebounceMs = n > 0 ? Math.floor(n * 1000) : -1;
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Sync on Idle (seconds)")
+      .setDesc("Triggers sync N seconds after you stop typing. 0 = disabled. Requires plugin reload if changed.")
+      .addText((text) => {
+        const secs = this.plugin.settings.syncOnIdleMs > 0
+          ? String(this.plugin.settings.syncOnIdleMs / 1000) : "0";
+        text.setPlaceholder("0").setValue(secs).onChange(async (v) => {
+          const n = parseFloat(v);
+          this.plugin.settings.syncOnIdleMs = n > 0 ? Math.floor(n * 1000) : -1;
           await this.plugin.saveSettings();
         });
       });
@@ -465,7 +500,7 @@ export class SSSSettingTab extends PluginSettingTab {
             const ok = await checkRelayHealth(this.plugin.settings.customRelayUrl);
             btn.setDisabled(false);
             btn.setButtonText("Test");
-            new Notice(ok ? "✅ Relay is reachable." : "❌ Could not reach relay. Check the URL.");
+            new Notice(ok ? "Relay is reachable." : "Could not reach relay. Check the URL.");
           })
         );
     }

@@ -55,8 +55,11 @@ export class StorageLocal extends StorageBase {
         let mtime = abstract.stat.mtime;
         if (mtime <= 0) mtime = abstract.stat.ctime;
         if (!mtime) {
-          this.logger?.warn(`File has mtime=0: ${key}`);
-          continue;
+          // Both mtime and ctime are 0 — seen on some platforms for brand-new
+          // or empty files. Use current time so the file is not silently
+          // excluded from the sync; worst case it gets re-uploaded once.
+          mtime = Date.now();
+          this.logger?.warn(`File has mtime=0, using current time: ${key}`);
         }
         entities.push({
           key,

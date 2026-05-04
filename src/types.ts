@@ -151,6 +151,8 @@ export interface PluginSettings {
   initSyncDelayMs: number;
   /** Debounce after file save before triggering sync, ms. -1 = disabled. */
   syncOnSaveDebounceMs: number;
+  /** Trigger sync after N ms of editor inactivity (no keystrokes). -1 = disabled. */
+  syncOnIdleMs: number;
 
   /** Max file size to sync in bytes. -1 = unlimited. */
   maxFileSizeBytes: number;
@@ -163,6 +165,13 @@ export interface PluginSettings {
 
   /** Show sync status in the status bar */
   showStatusBar: boolean;
+
+  /**
+   * When true: auto/on_save/on_idle syncs show toast notifications (old behaviour).
+   * When false (default): those triggers are silent — the floating indicator
+   * on mobile and the ribbon badge on desktop carry the state instead.
+   */
+  useToastForAutoSync: boolean;
 
   /** Log level for the browser console */
   logLevel: "debug" | "info" | "warn" | "error";
@@ -201,11 +210,13 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   autoSyncIntervalMs: -1,
   initSyncDelayMs: -1,
   syncOnSaveDebounceMs: -1,
+  syncOnIdleMs: -1,
 
   maxFileSizeBytes: -1,
   ignorePaths: [],
   syncConfigDir: false,
   showStatusBar: true,
+  useToastForAutoSync: false,
   logLevel: "info",
 
   useCustomRelay: false,
@@ -214,7 +225,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
 // ─── Sync trigger ─────────────────────────────────────────────────────────────
 
-export type SyncTrigger = "manual" | "auto" | "on_save" | "init" | "dry_run";
+export type SyncTrigger = "manual" | "auto" | "on_save" | "on_idle" | "init" | "dry_run";
 
 // ─── Status ───────────────────────────────────────────────────────────────────
 

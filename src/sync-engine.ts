@@ -12,6 +12,7 @@ import type {
   SyncDirection,
   SyncStats,
 } from "./types";
+import PQueue from "p-queue";
 import type { StorageBase } from "./storage-base";
 import { copyFileOrFolder } from "./sync-copy";
 import type { PluginLogger } from "./logger";
@@ -298,34 +299,38 @@ export async function executeTasks(opts: ExecuteOptions): Promise<SyncStats> {
   const actionable = tasks.filter((t) => t.kind !== "skip");
   let done = 0;
 
-  for (let i = 0; i < actionable.length; i += concurrency) {
-    const batch = actionable.slice(i, i + concurrency);
-    await Promise.all(
-      batch.map(async (task) => {
-        let lastErr: Error | undefined;
-        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-          try {
-            if (attempt > 0) {
-              logger?.warn(`[SSS] Retrying ${task.kind} ${task.key} (attempt ${attempt + 1})…`);
-              await delay(RETRY_BASE_MS * Math.pow(2, attempt - 1));
-            }
-            await executeTask(task, local, remote, stats, logger);
-            lastErr = undefined;
-            break;
-          } catch (err) {
-            lastErr = err as Error;
+  // A proper concurrency pool keeps exactly `concurrency` tasks in flight at
+  // all times, unlike the old batch approach that waited for the slowest task
+  // in each group before starting the next.
+  const queue = new PQueue({ concurrency });
+
+  for (const task of actionable) {
+    queue.add(async () => {
+      let lastErr: Error | undefined;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          if (attempt > 0) {
+            logger?.warn(`[SSS] Retrying ${task.kind} ${task.key} (attempt ${attempt + 1})…`);
+            await delay(RETRY_BASE_MS * Math.pow(2, attempt - 1));
           }
+          await executeTask(task, local, remote, stats, logger);
+          lastErr = undefined;
+          break;
+        } catch (err) {
+          lastErr = err as Error;
         }
-        if (lastErr) {
-          const msg = `[${task.kind}] ${task.key}: ${lastErr.message}`;
-          stats.errors.push(msg);
-          logger?.error(msg);
-        }
-        done++;
-        onProgress?.(done, actionable.length, task.key);
-      })
-    );
+      }
+      if (lastErr) {
+        const msg = `[${task.kind}] ${task.key}: ${lastErr.message}`;
+        stats.errors.push(msg);
+        logger?.error(msg);
+      }
+      done++;
+      onProgress?.(done, actionable.length, task.key);
+    });
   }
+
+  await queue.onIdle();
 
   stats.filesSkipped = tasks.length - actionable.length;
   stats.finishedAt = Date.now();
