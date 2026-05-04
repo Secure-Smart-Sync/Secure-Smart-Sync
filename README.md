@@ -15,9 +15,11 @@
   <strong>Privacy-first Obsidian vault sync via Cloudflare R2 with client-side encryption.</strong><br>
   Your files never leave your device unencrypted. No third-party servers. No subscriptions.
 </p>
-<div align="center">
-**NOTE**: This is not the official Sync from [Obsidian Sync](https://obsidian.md/sync)
-</div>
+<p align="center">
+  <b>NOTE</b>: This is not the official Sync from 
+  <a href="https://obsidian.md/sync">Obsidian Sync</a>
+</p>
+
 
 ## What it does
 
