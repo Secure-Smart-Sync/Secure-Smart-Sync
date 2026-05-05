@@ -153,6 +153,8 @@ export interface PluginSettings {
   syncOnSaveDebounceMs: number;
   /** Trigger sync after N ms of editor inactivity (no keystrokes). -1 = disabled. */
   syncOnIdleMs: number;
+  /** Trigger a sync 5 seconds after Obsidian launches. */
+  syncOnOpen: boolean;
 
   /** Max file size to sync in bytes. -1 = unlimited. */
   maxFileSizeBytes: number;
@@ -190,6 +192,9 @@ export interface PluginSettings {
   /** Internal: randomly generated vault identifier (used as DB namespace) */
   _vaultId?: string;
 
+  /** Internal: per-device random identifier for sentinel ownership. Never synced. */
+  _deviceId?: string;
+
   /** Internal: whether user accepted the sync algorithm notice */
   _acceptedSyncNotice?: boolean;
 }
@@ -211,6 +216,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   initSyncDelayMs: -1,
   syncOnSaveDebounceMs: -1,
   syncOnIdleMs: -1,
+  syncOnOpen: false,
 
   maxFileSizeBytes: -1,
   ignorePaths: [],
@@ -225,7 +231,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
 // ─── Sync trigger ─────────────────────────────────────────────────────────────
 
-export type SyncTrigger = "manual" | "auto" | "on_save" | "on_idle" | "init" | "dry_run";
+export type SyncTrigger = "manual" | "auto" | "on_save" | "on_idle" | "init" | "dry_run" | "state_aware";
 
 // ─── Status ───────────────────────────────────────────────────────────────────
 

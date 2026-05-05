@@ -386,6 +386,8 @@ export class StorageR2 extends StorageBase {
 
     for (const obj of objects) {
       const entity = entityFromListObject(obj, this.prefix, mtimeOverrides);
+      // Never expose the internal sentinel directory to the sync engine.
+      if (entity.key!.startsWith("__sss_state__/")) continue;
       realKeys.add(entity.key!);
       entities.push(entity);
 

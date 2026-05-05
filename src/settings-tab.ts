@@ -429,6 +429,16 @@ export class SSSSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Sync on App Open")
+      .setDesc("Triggers a sync 5 seconds after Obsidian launches.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.syncOnOpen).onChange(async (v) => {
+          this.plugin.settings.syncOnOpen = v;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    new Setting(containerEl)
       .setName("Auto-Sync Interval (minutes)")
       .setDesc("0 = disabled.")
       .addText((text) => {

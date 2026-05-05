@@ -94,6 +94,8 @@ export default class SSSPlugin extends Plugin {
   private statusBarEl?: HTMLElement;
   private autoSyncTimer?: ReturnType<typeof setInterval>;
   private isSyncing = false;
+  private sentinelPollTimer?: ReturnType<typeof setInterval>;
+  private lastSeenSentinelAt = 0;
 
   // ── Ribbon indicator state ───────────────────────────────────────────
   private ribbonEl?: HTMLElement;
@@ -111,12 +113,21 @@ export default class SSSPlugin extends Plugin {
   private mobilePillTimer?: ReturnType<typeof setTimeout>;
   private mobileSuccessTimer?: ReturnType<typeof setTimeout>;
   private mobilePillExpanded = false;
+  private mobileVisibilityObserver?: MutationObserver;
 
   async onload(): Promise<void> {
     this.logger = new PluginLogger("[SSS]");
 
     await this.loadSettings();
     this.logger.setLevel(this.settings.logLevel);
+
+    // Generate a stable per-device ID on first load. Stored in settings but never synced.
+    if (!this.settings._deviceId) {
+      this.settings._deviceId =
+        Math.random().toString(36).slice(2, 10) +
+        Math.random().toString(36).slice(2, 10);
+      await this.saveSettings();
+    }
 
     const { db, vaultId } = await prepareDB(
       this.app.vault.adapter.getBasePath?.() ?? this.app.vault.getName(),
@@ -151,11 +162,12 @@ export default class SSSPlugin extends Plugin {
 
     this.addSettingTab(new SSSSettingTab(this.app, this));
     this.scheduleAutoSync();
+    this.scheduleSentinelPoll();
     this.registerOnSaveHandler();
     this.registerOnIdleHandler();
 
-    if (this.settings.initSyncDelayMs > 0) {
-      window.setTimeout(() => this.triggerSync("init"), this.settings.initSyncDelayMs);
+    if (this.settings.syncOnOpen) {
+      window.setTimeout(() => this.triggerSync("init"), 5000);
     }
 
     this.logger.info(`Plugin loaded. Vault ID: ${vaultId}`);
@@ -163,6 +175,7 @@ export default class SSSPlugin extends Plugin {
 
   async onunload(): Promise<void> {
     this.clearAutoSync();
+    if (this.sentinelPollTimer !== undefined) window.clearInterval(this.sentinelPollTimer);
     this.dismissStatusPill();
     this.teardownMobileIndicator();
     if (this.ribbonSuccessTimer !== undefined) window.clearTimeout(this.ribbonSuccessTimer);
@@ -179,6 +192,7 @@ export default class SSSPlugin extends Plugin {
     await this.saveData(encodeSettings(this.settings));
     this.logger.setLevel(this.settings.logLevel);
     this.scheduleAutoSync();
+    this.scheduleSentinelPoll();
   }
 
   async triggerSync(trigger: SyncTrigger): Promise<void> {
@@ -235,6 +249,11 @@ export default class SSSPlugin extends Plugin {
         this.settings.lastSyncedAt = now;
         await this.saveSettings();
         await insertSyncHistoryEntry(this.db, this.vaultId, JSON.stringify(stats));
+        // Write sentinel so other devices detect this sync via polling.
+        // state_aware syncs never write the sentinel — that's what stops A→B→A cascades.
+        if (trigger !== "state_aware") {
+          await this.writeSentinel();
+        }
       }
     } catch (err) {
       const msg = (err as Error).message;
@@ -649,6 +668,7 @@ export default class SSSPlugin extends Plugin {
    * Active → coloured dot + tap expands pill rightward.
    */
   private mountMobileIndicator(): void {
+    if (!Platform.isMobile) return;   // never mount on desktop
     if (this.mobileIndicatorEl) return; // already mounted
 
     const el = document.body.createDiv({ cls: "sss-mob-indicator sss-mob-idle" });
@@ -691,6 +711,7 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
 
     el.addEventListener("click", () => this.handleMobileIndicatorClick());
     this.mobileIndicatorEl = el;
+    this.setupMobileVisibilityWatcher();
   }
 
   /**
@@ -708,7 +729,10 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
       this.mobileSuccessTimer = undefined;
     }
 
+    // Capture hidden state before wiping className so it survives the update.
+    const wasHidden = el.classList.contains("sss-mob-hidden");
     el.className = `sss-mob-indicator sss-mob-${status}`;
+    if (wasHidden) el.classList.add("sss-mob-hidden");
 
     if (status === "success") {
       this.mobileSuccessTimer = window.setTimeout(() => {
@@ -783,6 +807,10 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
 
   /** Remove the mobile indicator and pill entirely from the DOM. */
   private teardownMobileIndicator(): void {
+    if (this.mobileVisibilityObserver) {
+      this.mobileVisibilityObserver.disconnect();
+      this.mobileVisibilityObserver = undefined;
+    }
     this.collapseMobilePill();
     if (this.mobileSuccessTimer !== undefined) {
       window.clearTimeout(this.mobileSuccessTimer);
@@ -792,5 +820,188 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
       this.mobileIndicatorEl.remove();
       this.mobileIndicatorEl = undefined;
     }
+  }
+
+  // ── Mobile visibility watcher ─────────────────────────────────────────────────
+  //
+  // The floating indicator must hide itself whenever something overlays its
+  // position: modals, command palette, the sidebar being open, or notices.
+  //
+  // Strategy:
+  //   • One MutationObserver on document.body watches childList AND its own
+  //     class attribute — catches modal/prompt injection and sidebar-open class
+  //     changes that Obsidian applies directly to <body>.
+  //   • Once .notice-container appears, a second observer latches onto its
+  //     childList so individual notice add/remove also triggers a refresh.
+  //   • A third observer watches the .workspace element for class changes
+  //     (sidebar open/close can also land here depending on Obsidian build).
+  //
+  // All paths feed refreshMobileIndicatorVisibility() which does the actual
+  // DOM check and toggles `sss-mob-hidden` on the indicator element.
+
+  private setupMobileVisibilityWatcher(): void {
+    const refresh = () => this.refreshMobileIndicatorVisibility();
+
+    // ── Body observer (childList + own class changes) ──────────────────────────
+    let noticeContainerObserver: MutationObserver | undefined;
+
+    const attachNoticeObserver = (container: Element) => {
+      if (noticeContainerObserver) return; // already watching
+      noticeContainerObserver = new MutationObserver(refresh);
+      noticeContainerObserver.observe(container, { childList: true });
+    };
+
+    // Latch onto notice-container immediately if it already exists.
+    const existingNc = document.body.querySelector(".notice-container");
+    if (existingNc) attachNoticeObserver(existingNc);
+
+    const bodyObserver = new MutationObserver(() => {
+      const nc = document.body.querySelector(".notice-container");
+      if (nc) attachNoticeObserver(nc);
+      refresh();
+    });
+    // childList catches modal/prompt injection; attributes catches sidebar class on <body>.
+    bodyObserver.observe(document.body, {
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    // ── Workspace element observer ─────────────────────────────────────────────
+    // Obsidian may toggle `is-left-sidebar-open` on .workspace instead of body.
+    const workspaceEl =
+      document.body.querySelector(".workspace") ??
+      document.body.querySelector(".app-container");
+    let workspaceObserver: MutationObserver | undefined;
+    if (workspaceEl) {
+      workspaceObserver = new MutationObserver(refresh);
+      workspaceObserver.observe(workspaceEl, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    // ── Unified handle ─────────────────────────────────────────────────────────
+    // teardownMobileIndicator() calls disconnect() on this.mobileVisibilityObserver.
+    // Wrap all three observers so one disconnect() call cleans them all up.
+    this.mobileVisibilityObserver = {
+      disconnect() {
+        bodyObserver.disconnect();
+        noticeContainerObserver?.disconnect();
+        workspaceObserver?.disconnect();
+      },
+      observe()     {},           // unused — satisfies MutationObserver shape
+      takeRecords:  () => [],
+    } as unknown as MutationObserver;
+
+    // Set correct initial visibility state.
+    refresh();
+  }
+
+  /**
+   * Inspect the live DOM and show/hide the mobile indicator accordingly.
+   *
+   * Hidden when ANY of these conditions hold:
+   *   • A modal overlay is present   (.modal-container in body)
+   *   • The command palette is open  (.prompt in body)
+   *   • The left sidebar is open     (is-left-sidebar-open on body or .workspace)
+   *   • One or more notices are live (.notice-container has children)
+   */
+  private refreshMobileIndicatorVisibility(): void {
+    const el = this.mobileIndicatorEl;
+    if (!el) return;
+
+    const hasModal  = !!document.body.querySelector(".modal-container");
+    const hasPrompt = !!document.body.querySelector(".prompt");
+
+    const noticeContainer = document.body.querySelector(".notice-container");
+    const hasNotices = !!noticeContainer && noticeContainer.childElementCount > 0;
+
+    const sidebarOpen =
+      document.body.classList.contains("is-left-sidebar-open") ||
+      !!document.body.querySelector(".workspace.is-left-sidebar-open") ||
+      !!document.body.querySelector(".app-container.is-left-sidebar-open");
+
+    const shouldHide = hasModal || hasPrompt || hasNotices || sidebarOpen;
+    el.classList.toggle("sss-mob-hidden", shouldHide);
+
+    // Collapse any expanded pill so it doesn't float behind an overlay.
+    if (shouldHide && this.mobilePillExpanded) {
+      this.collapseMobilePill();
+    }
+  }
+
+  // ── Sentinel (state awareness) ────────────────────────────────────────────────
+
+  /** Key passed to StorageR2 methods — prefix is added internally by the storage layer. */
+  private get sentinelKey(): string {
+    return "__sss_state__/sync.json";
+  }
+
+  /** Write sentinel to R2 after a real sync. Non-fatal on failure. */
+  private async writeSentinel(): Promise<void> {
+    if (!this.settings.r2.endpoint || !this.settings.r2.bucketName) return;
+    try {
+      const payload = JSON.stringify({
+        deviceId: this.settings._deviceId,
+        syncedAt: Date.now(),
+        vaultId:  this.vaultId,
+      });
+      const content = new TextEncoder().encode(payload).buffer as ArrayBuffer;
+      const remote  = new StorageR2(this.settings.r2);
+      const now     = Date.now();
+      await remote.writeFile(this.sentinelKey, content, now, now);
+    } catch (err) {
+      this.logger.warn("[SSS] Failed to write state sentinel:", (err as Error).message);
+      // Non-fatal — sync succeeded, only cross-device awareness is affected.
+    }
+  }
+
+  /**
+   * Poll the sentinel every 60 s.
+   * If another device wrote it more recently than our last read, trigger a sync.
+   */
+  private async pollSentinel(): Promise<void> {
+    if (!this.settings.r2.endpoint || !this.settings.r2.bucketName) return;
+    if (this.isSyncing) return;
+    try {
+      const remote   = new StorageR2(this.settings.r2);
+      const stat     = await remote.stat(this.sentinelKey);
+      if (!stat || !stat.mtimeSvr) return;
+      const remoteTs = stat.mtimeSvr;
+      // Only react if this is a write we haven't seen before.
+      if (remoteTs <= this.lastSeenSentinelAt) return;
+      // Read the sentinel to check device ownership.
+      const raw  = await remote.readFile(this.sentinelKey);
+      const data = JSON.parse(new TextDecoder().decode(raw));
+      // Update seen-timestamp regardless of whether we react,
+      // so a second poll before we finish syncing doesn't re-trigger.
+      this.lastSeenSentinelAt = remoteTs;
+      if (data.deviceId === this.settings._deviceId) return; // our own write
+      if (data.vaultId  !== this.vaultId)            return; // different vault
+      this.logger.info(`[SSS] State change detected from device ${data.deviceId}, triggering sync`);
+      await this.triggerSync("state_aware");
+    } catch (err) {
+      const msg        = (err as Error).message ?? "";
+      const statusCode = (err as any)?.$metadata?.httpStatusCode as number | undefined;
+      const errName    = (err as any)?.name as string | undefined;
+      // 404 / NoSuchKey / NotFound = sentinel not written yet — ignore silently.
+      const isNotFound =
+        statusCode === 404 ||
+        msg.includes("404") ||
+        msg.includes("NoSuchKey") ||
+        errName === "NotFound" ||
+        errName === "NoSuchKey";
+      if (!isNotFound) {
+        this.logger.warn("[SSS] Sentinel poll error:", msg);
+      }
+    }
+  }
+
+  /** Start (or restart) the 60-second sentinel poll. */
+  private scheduleSentinelPoll(): void {
+    if (this.sentinelPollTimer !== undefined) {
+      window.clearInterval(this.sentinelPollTimer);
+      this.sentinelPollTimer = undefined;
+    }
+    if (!this.settings.r2.endpoint || !this.settings.r2.bucketName) return;
+    this.sentinelPollTimer = window.setInterval(() => this.pollSentinel(), 60_000);
   }
 }
