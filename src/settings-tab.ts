@@ -406,14 +406,13 @@ export class SSSSettingTab extends PluginSettingTab {
 
     containerEl.createEl("h3", { text: "Automation" });
 
-    // Notification behaviour note
+    // Notification note (always visible regardless of sync mode)
     const autoNote = containerEl.createDiv({ cls: "sss-inline-note sss-auto-note" });
     autoNote.createEl("strong", { text: "Non-intrusive by default. " });
     autoNote.appendText(
-      "Auto-sync, on-save, and on-idle triggers do not show pop-up toasts, " +
+      "Automatic sync triggers do not show pop-up toasts, " +
       "keeping your writing session uninterrupted. " +
-      "On mobile, a small floating indicator shows sync state instead. " +
-      "Toggle the option below to revert to toast notifications."
+      "On mobile, a small floating indicator shows sync state instead."
     );
 
     new Setting(containerEl)
@@ -428,54 +427,99 @@ export class SSSSettingTab extends PluginSettingTab {
         })
       );
 
+    // ── Smart Sync ───────────────────────────────────────────────────────────
+
+    const smartSyncNote = containerEl.createDiv({ cls: "sss-inline-note sss-auto-note" });
+    smartSyncNote.createEl("strong", { text: "Smart Sync — Recommended. " });
+    smartSyncNote.appendText(
+      "Watches for changes across all your devices automatically. " +
+      "A few seconds after you stop writing, your vault syncs silently. " +
+      "Other open devices are notified via the cloud and pull the changes within seconds. " +
+      "When Obsidian reopens on any device, it checks for changes made while it was closed. " +
+      "Enabling Smart Sync disables the manual automation settings below."
+    );
+
+    const smartEnabled = this.plugin.settings.smartSync;
+
     new Setting(containerEl)
-      .setName("Sync on App Open")
-      .setDesc("Triggers a sync 5 seconds after Obsidian launches.")
+      .setName("Smart Sync")
+      .setDesc(smartEnabled
+        ? "On — all automation is handled automatically."
+        : "Off — configure automation manually below.")
       .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.syncOnOpen).onChange(async (v) => {
-          this.plugin.settings.syncOnOpen = v;
+        toggle.setValue(smartEnabled).onChange(async (v) => {
+          this.plugin.settings.smartSync = v;
           await this.plugin.saveSettings();
+          this.display(); // re-render to show/hide relevant fields
         })
       );
 
-    new Setting(containerEl)
-      .setName("Auto-Sync Interval (minutes)")
-      .setDesc("0 = disabled.")
-      .addText((text) => {
-        const minutes = this.plugin.settings.autoSyncIntervalMs > 0
-          ? String(this.plugin.settings.autoSyncIntervalMs / 60000) : "0";
-        text.setPlaceholder("0").setValue(minutes).onChange(async (v) => {
-          const n = parseFloat(v);
-          this.plugin.settings.autoSyncIntervalMs = n > 0 ? Math.floor(n * 60000) : -1;
-          await this.plugin.saveSettings();
-        });
-      });
+    if (smartEnabled) {
+      new Setting(containerEl)
+        .setName("Idle time before sync (seconds)")
+        .setDesc("Sync triggers this many seconds after you stop typing. Default: 7.")
+        .addText((text) =>
+          text
+            .setPlaceholder("7")
+            .setValue(String(this.plugin.settings.smartSyncIdleSeconds ?? 7))
+            .onChange(async (v) => {
+              const n = parseInt(v, 10);
+              this.plugin.settings.smartSyncIdleSeconds = (n > 0 && n <= 300) ? n : 7;
+              await this.plugin.saveSettings();
+            })
+        );
+    }
 
-    new Setting(containerEl)
-      .setName("Sync on Save Debounce (seconds)")
-      .setDesc("Triggers sync N seconds after a file is saved. 0 = disabled. Requires plugin reload if changed.")
-      .addText((text) => {
-        const secs = this.plugin.settings.syncOnSaveDebounceMs > 0
-          ? String(this.plugin.settings.syncOnSaveDebounceMs / 1000) : "0";
-        text.setPlaceholder("0").setValue(secs).onChange(async (v) => {
-          const n = parseFloat(v);
-          this.plugin.settings.syncOnSaveDebounceMs = n > 0 ? Math.floor(n * 1000) : -1;
-          await this.plugin.saveSettings();
-        });
-      });
+    if (!smartEnabled) {
+      new Setting(containerEl)
+        .setName("Sync on App Open")
+        .setDesc("Triggers a sync 5 seconds after Obsidian launches.")
+        .addToggle((toggle) =>
+          toggle.setValue(this.plugin.settings.syncOnOpen).onChange(async (v) => {
+            this.plugin.settings.syncOnOpen = v;
+            await this.plugin.saveSettings();
+          })
+        );
 
-    new Setting(containerEl)
-      .setName("Sync on Idle (seconds)")
-      .setDesc("Triggers sync N seconds after you stop typing. 0 = disabled. Requires plugin reload if changed.")
-      .addText((text) => {
-        const secs = this.plugin.settings.syncOnIdleMs > 0
-          ? String(this.plugin.settings.syncOnIdleMs / 1000) : "0";
-        text.setPlaceholder("0").setValue(secs).onChange(async (v) => {
-          const n = parseFloat(v);
-          this.plugin.settings.syncOnIdleMs = n > 0 ? Math.floor(n * 1000) : -1;
-          await this.plugin.saveSettings();
+      new Setting(containerEl)
+        .setName("Auto-Sync Interval (minutes)")
+        .setDesc("0 = disabled.")
+        .addText((text) => {
+          const minutes = this.plugin.settings.autoSyncIntervalMs > 0
+            ? String(this.plugin.settings.autoSyncIntervalMs / 60000) : "0";
+          text.setPlaceholder("0").setValue(minutes).onChange(async (v) => {
+            const n = parseFloat(v);
+            this.plugin.settings.autoSyncIntervalMs = n > 0 ? Math.floor(n * 60000) : -1;
+            await this.plugin.saveSettings();
+          });
         });
-      });
+
+      new Setting(containerEl)
+        .setName("Sync on Save Debounce (seconds)")
+        .setDesc("Triggers sync N seconds after a file is saved. 0 = disabled. Requires plugin reload if changed.")
+        .addText((text) => {
+          const secs = this.plugin.settings.syncOnSaveDebounceMs > 0
+            ? String(this.plugin.settings.syncOnSaveDebounceMs / 1000) : "0";
+          text.setPlaceholder("0").setValue(secs).onChange(async (v) => {
+            const n = parseFloat(v);
+            this.plugin.settings.syncOnSaveDebounceMs = n > 0 ? Math.floor(n * 1000) : -1;
+            await this.plugin.saveSettings();
+          });
+        });
+
+      new Setting(containerEl)
+        .setName("Sync on Idle (seconds)")
+        .setDesc("Triggers sync N seconds after you stop typing. 0 = disabled. Requires plugin reload if changed.")
+        .addText((text) => {
+          const secs = this.plugin.settings.syncOnIdleMs > 0
+            ? String(this.plugin.settings.syncOnIdleMs / 1000) : "0";
+          text.setPlaceholder("0").setValue(secs).onChange(async (v) => {
+            const n = parseFloat(v);
+            this.plugin.settings.syncOnIdleMs = n > 0 ? Math.floor(n * 1000) : -1;
+            await this.plugin.saveSettings();
+          });
+        });
+    }
 
     // ── Advanced ──────────────────────────────────────────────────────────────
 

@@ -156,6 +156,14 @@ export interface PluginSettings {
   /** Trigger a sync 5 seconds after Obsidian launches. */
   syncOnOpen: boolean;
 
+  /**
+   * Smart Sync mode — replaces all manual automation settings.
+   * Handles idle sync, cross-device notification, and on-open catch-up automatically.
+   */
+  smartSync: boolean;
+  /** Seconds of editor inactivity before Smart Sync fires. Default 7. */
+  smartSyncIdleSeconds: number;
+
   /** Max file size to sync in bytes. -1 = unlimited. */
   maxFileSizeBytes: number;
 
@@ -217,6 +225,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   syncOnSaveDebounceMs: -1,
   syncOnIdleMs: -1,
   syncOnOpen: false,
+  smartSync: false,
+  smartSyncIdleSeconds: 7,
 
   maxFileSizeBytes: -1,
   ignorePaths: [],

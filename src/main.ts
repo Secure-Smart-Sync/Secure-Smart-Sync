@@ -94,8 +94,13 @@ export default class SSSPlugin extends Plugin {
   private statusBarEl?: HTMLElement;
   private autoSyncTimer?: ReturnType<typeof setInterval>;
   private isSyncing = false;
-  private sentinelPollTimer?: ReturnType<typeof setInterval>;
+  private sentinelPollTimer?: ReturnType<typeof setTimeout>;
+  /** Timestamp of the last editor-change event. Used by adaptive poll interval. */
+  private _lastEditAt = 0;
   private lastSeenSentinelAt = 0;
+  private smartSyncPostPollTimer?: ReturnType<typeof setTimeout>;
+  /** Recreatable idle debounce shared by Smart Sync and legacy on-idle mode. */
+  private idleDebounceFunc?: { (): void; cancel(): void; flush(): void };
 
   // ── Ribbon indicator state ───────────────────────────────────────────
   private ribbonEl?: HTMLElement;
@@ -164,18 +169,40 @@ export default class SSSPlugin extends Plugin {
     this.scheduleAutoSync();
     this.scheduleSentinelPoll();
     this.registerOnSaveHandler();
-    this.registerOnIdleHandler();
 
-    if (this.settings.syncOnOpen) {
+    // Single editor-change registration shared by both Smart Sync and legacy
+    // on-idle mode. The actual debounce function (and delay) is managed by
+    // rescheduleIdleHandler() and can be updated live when settings change.
+    this.rescheduleIdleHandler();
+    this.registerEvent(
+      (this.app.workspace as any).on("editor-change", () => {
+        this._lastEditAt = Date.now();
+        this.idleDebounceFunc?.();
+      })
+    );
+
+    if (this.settings.smartSync) {
+      // Smart Sync on-open: poll sentinel 3s after load to catch changes
+      // made on other devices while this one was closed.
+      this.runSmartSyncOnOpen();
+    } else if (this.settings.syncOnOpen) {
       window.setTimeout(() => this.triggerSync("init"), 5000);
     }
+
+    // Always register the visibility flush handler — it gates itself at fire
+    // time via this.settings.smartSync, so it's a noop when Smart Sync is off.
+    // Registering unconditionally means toggling Smart Sync on at runtime
+    // (without a reload) still gets the background-flush behaviour.
+    this.registerVisibilityFlush();
 
     this.logger.info(`Plugin loaded. Vault ID: ${vaultId}`);
   }
 
   async onunload(): Promise<void> {
     this.clearAutoSync();
-    if (this.sentinelPollTimer !== undefined) window.clearInterval(this.sentinelPollTimer);
+    if (this.sentinelPollTimer !== undefined) window.clearTimeout(this.sentinelPollTimer);
+    if (this.smartSyncPostPollTimer !== undefined) window.clearTimeout(this.smartSyncPostPollTimer);
+    this.idleDebounceFunc?.cancel();
     this.dismissStatusPill();
     this.teardownMobileIndicator();
     if (this.ribbonSuccessTimer !== undefined) window.clearTimeout(this.ribbonSuccessTimer);
@@ -193,6 +220,7 @@ export default class SSSPlugin extends Plugin {
     this.logger.setLevel(this.settings.logLevel);
     this.scheduleAutoSync();
     this.scheduleSentinelPoll();
+    this.rescheduleIdleHandler();
   }
 
   async triggerSync(trigger: SyncTrigger): Promise<void> {
@@ -253,6 +281,18 @@ export default class SSSPlugin extends Plugin {
         // state_aware syncs never write the sentinel — that's what stops A→B→A cascades.
         if (trigger !== "state_aware") {
           await this.writeSentinel();
+          // Smart Sync: schedule a one-shot poll 2s after the sentinel lands.
+          // This catches the case where another device synced at the same time
+          // and we need to pull its changes immediately.
+          if (this.settings.smartSync) {
+            if (this.smartSyncPostPollTimer !== undefined) {
+              window.clearTimeout(this.smartSyncPostPollTimer);
+            }
+            this.smartSyncPostPollTimer = window.setTimeout(() => {
+              this.smartSyncPostPollTimer = undefined;
+              void this.pollSentinel();
+            }, 2000);
+          }
         }
       }
     } catch (err) {
@@ -503,6 +543,7 @@ export default class SSSPlugin extends Plugin {
 
   private scheduleAutoSync(): void {
     this.clearAutoSync();
+    if (this.settings.smartSync) return; // Smart Sync manages its own rhythm
     const ms = this.settings.autoSyncIntervalMs;
     if (ms > 0) {
       this.autoSyncTimer = setInterval(() => this.triggerSync("auto"), ms);
@@ -521,48 +562,107 @@ export default class SSSPlugin extends Plugin {
     const debounceMs = this.settings.syncOnSaveDebounceMs;
     if (debounceMs <= 0) return;
 
-    // A proper debounce resets the timer on every call, firing only once the
-    // user has actually stopped for the full window. The old throttle fired
-    // on the leading edge and caused rapid repeated syncs on desktop.
     const doSync = debounce(() => this.triggerSync("on_save"), debounceMs);
 
-    // vault.modify is reliable on desktop.
+    // Smart Sync manages its own rhythm — on-save is a noop when it's active.
+    // We check at fire time (not registration time) so toggling Smart Sync
+    // live takes effect without a plugin reload.
     this.registerEvent(
-      this.app.vault.on("modify", () => doSync())
+      this.app.vault.on("modify", () => {
+        if (this.settings.smartSync) return;
+        doSync();
+      })
     );
 
-    // On mobile, vault.modify fires inconsistently. editor-change is more
-    // reliable there. Both feed the same debounced function so they cooperate
-    // — whichever fires resets the shared timer.
     if (Platform.isMobile) {
       this.registerEvent(
-        (this.app.workspace as any).on("editor-change", () => doSync())
+        (this.app.workspace as any).on("editor-change", () => {
+          if (this.settings.smartSync) return;
+          doSync();
+        })
       );
     }
-  }
-
-  // ── On-idle handler ───────────────────────────────────────────────────────────
-  // Triggers sync after N ms of editor inactivity on both platforms.
-  // Complements on-save (which fires after file-level events) by also
-  // catching rapid-keystroke sessions where the user stops and walks away.
-
-  private registerOnIdleHandler(): void {
-    const idleMs = this.settings.syncOnIdleMs;
-    if (idleMs <= 0) return;
-
-    // Debounce from editor activity: fires idleMs after the LAST keystroke.
-    const doSync = debounce(() => this.triggerSync("on_idle"), idleMs);
-
-    // editor-change is reliable on both desktop and mobile.
-    this.registerEvent(
-      (this.app.workspace as any).on("editor-change", () => doSync())
-    );
   }
 
   private setStatus(state: "idle" | "syncing" | "error"): void {
     if (!this.statusBarEl) return;
     this.statusBarEl.innerHTML =
       `<span class="sss-status-icon">${SSSPlugin.STATUS_ICONS[state]}</span>SSS`;
+  }
+
+  // ── Smart Sync handlers ───────────────────────────────────────────────────────
+
+  /**
+   * Recreate the idle-sync debounced function from current settings.
+   * Called from onload() and saveSettings() so the delay updates live
+   * when Smart Sync is toggled or idle seconds are changed.
+   *
+   * Smart Sync on  → debounce delay = smartSyncIdleSeconds (default 7s)
+   * Smart Sync off → debounce delay = syncOnIdleMs (-1 = disabled)
+   */
+  private rescheduleIdleHandler(): void {
+    // Cancel any in-flight debounce before replacing the function.
+    this.idleDebounceFunc?.cancel();
+
+    const ms = this.settings.smartSync
+      ? (this.settings.smartSyncIdleSeconds ?? 7) * 1000
+      : this.settings.syncOnIdleMs;
+
+    if (ms > 0) {
+      this.idleDebounceFunc = debounce(
+        () => this.triggerSync("on_idle"),
+        ms
+      ) as unknown as { (): void; cancel(): void; flush(): void };
+    } else {
+      this.idleDebounceFunc = undefined;
+    }
+  }
+
+  /**
+   * Smart Sync on-open: poll the sentinel 3 seconds after Obsidian loads.
+   * If another device synced while this one was closed, pollSentinel() will
+   * detect the foreign write and fire a state_aware sync automatically.
+   */
+  private runSmartSyncOnOpen(): void {
+    window.setTimeout(() => void this.pollSentinel(), 3000);
+  }
+
+  /**
+   * Manages two behaviours on document visibility change:
+   *
+   * HIDDEN (app backgrounded / tab switched away):
+   *   1. Flush the pending idle debounce immediately so unsaved changes
+   *      are not stranded if the user closes the app mid-session.
+   *   2. Clear the sentinel poll interval — no point burning network
+   *      and battery while the user isn’t looking at Obsidian.
+   *
+   * VISIBLE (app foregrounded / tab focused again):
+   *   1. Restart the sentinel poll interval.
+   *   2. Fire one immediate pollSentinel() so the device catches up
+   *      instantly rather than waiting up to 30s for the next tick.
+   */
+  private registerVisibilityFlush(): void {
+    const handler = () => {
+      if (document.hidden) {
+        // ── Going to background ───────────────────────────────────────
+        if (this.settings.smartSync && !this.isSyncing) {
+          this.idleDebounceFunc?.flush();
+        }
+        // Pause the poll — cancels the pending setTimeout tick.
+        if (this.sentinelPollTimer !== undefined) {
+          window.clearTimeout(this.sentinelPollTimer);
+          this.sentinelPollTimer = undefined;
+        }
+      } else {
+        // ── Coming back to foreground ──────────────────────────────
+        // Restart the interval, then poll immediately so the user doesn’t
+        // wait a full 30s to receive changes made while they were away.
+        this.scheduleSentinelPoll();
+        void this.pollSentinel();
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    this.register(() => document.removeEventListener("visibilitychange", handler));
   }
 
   private setStatusText(text: string): void {
@@ -975,7 +1075,9 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
       // so a second poll before we finish syncing doesn't re-trigger.
       this.lastSeenSentinelAt = remoteTs;
       if (data.deviceId === this.settings._deviceId) return; // our own write
-      if (data.vaultId  !== this.vaultId)            return; // different vault
+      // vaultId check removed: _vaultId is never shared during pairing, so
+      // Device A and Device B always have different vaultIds. The bucket +
+      // prefix already scopes the sentinel to the correct vault.
       this.logger.info(`[SSS] State change detected from device ${data.deviceId}, triggering sync`);
       await this.triggerSync("state_aware");
     } catch (err) {
@@ -995,13 +1097,57 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
     }
   }
 
-  /** Start (or restart) the 60-second sentinel poll. */
+  /**
+   * Returns the appropriate sentinel poll interval based on recent activity.
+   *
+   * Active window  (editor touched within last 2 min): 4 s
+   *   → Device B detects Device A's sentinel within one tick after the sync lands.
+   * Idle window    (no edits for >2 min, app still visible): 30 s
+   *   → Minimal R2 Class B ops when nobody is actively writing.
+   * Legacy mode    (Smart Sync off): 60 s passive fallback.
+   *
+   * Op budget (2 devices, 8 h active + 16 h idle/day, Smart Sync on):
+   *   Active : 3600/4  × 2 × 8  ≈  14 400 ops/day
+   *   Idle   : 3600/30 × 2 × 16 ≈   3 840 ops/day
+   *   Total  : ~18 240/day × 30 ≈ ~547 K/month  (5.5% of 10M free tier)
+   */
+  private _adaptivePollIntervalMs(): number {
+    if (!this.settings.smartSync) return 60_000;
+    const msSinceEdit = Date.now() - this._lastEditAt;
+    return msSinceEdit < 2 * 60 * 1000 ? 4_000 : 30_000;
+  }
+
+  /**
+   * Start (or restart) the adaptive sentinel poll loop.
+   *
+   * Uses a self-rescheduling setTimeout instead of setInterval so the
+   * delay is re-evaluated on every tick — short (4 s) while the user is
+   * actively editing, long (30 s) once they go idle, zero when hidden.
+   *
+   * Callers (onload, saveSettings, registerVisibilityFlush on-visible)
+   * all go through this single entry point, so there is never more than
+   * one live timer at a time.
+   */
   private scheduleSentinelPoll(): void {
+    // Cancel any previously scheduled tick first.
     if (this.sentinelPollTimer !== undefined) {
-      window.clearInterval(this.sentinelPollTimer);
+      window.clearTimeout(this.sentinelPollTimer);
       this.sentinelPollTimer = undefined;
     }
     if (!this.settings.r2.endpoint || !this.settings.r2.bucketName) return;
-    this.sentinelPollTimer = window.setInterval(() => this.pollSentinel(), 60_000);
+
+    const tick = () => {
+      // Guard: if the loop was cancelled externally (unload / hidden), stop.
+      if (this.sentinelPollTimer === undefined) return;
+
+      void this.pollSentinel().finally(() => {
+        // Reschedule only if the loop hasn't been cancelled during the async poll.
+        if (this.sentinelPollTimer === undefined) return;
+        this.sentinelPollTimer = window.setTimeout(tick, this._adaptivePollIntervalMs());
+      });
+    };
+
+    // Schedule the first tick at the current adaptive interval.
+    this.sentinelPollTimer = window.setTimeout(tick, this._adaptivePollIntervalMs());
   }
 }
