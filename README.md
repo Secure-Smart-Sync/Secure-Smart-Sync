@@ -20,8 +20,8 @@
   <a href="https://obsidian.md/sync">Obsidian Sync</a>
 </p>
 
- **IMPORTANT:** Please read the [Usage Guidelines](./Usage_Guidelines.md) 
- for critical setup pointers before using this plugin for better results and understanding.
+<img src="https://githubusercontent.com" width="16" height="16"> **IMPORTANT:** Read the [Usage Guidelines](./Usage_Guidelines.md) before setup to ensure optimal results.
+
 
 ## What it does
 
