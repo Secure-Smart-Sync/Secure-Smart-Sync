@@ -118,3 +118,33 @@ If everything looks correct (it should plan to push all your local files to the 
 **`Secure-Smart-Sync: Sync now`**
 
 Once this completes successfully on your primary device, you can trigger a "Sync now" on your secondary devices to pull the encrypted files down and complete the setup!
+
+## 10. Sync Settings & Usage Notes
+
+Once your initial setup is complete, you can customize how the sync engine handles your files. Navigate to the **Sync** section in the plugin settings to adjust these preferences.
+
+### Sync Direction
+For a standard multi-device setup, leave this set to **Bidirectional**. This ensures changes from any device are pushed to the cloud, and cloud changes are pulled down to your local vault. 
+
+### Conflict Resolution
+A "conflict" happens if you edit the exact same file on two different devices before they have a chance to sync. This setting determines which version "wins" and overwrites the other:
+*   **Keep newer:** Keeps the file that was modified most recently (Recommended).
+*   **Keep larger:** Keeps the file with the largest file size.
+*   **Always keep local:** The device performing the sync always overrides the cloud version.
+*   **Always keep remote:** The cloud version always overrides the local device.
+
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** More advanced conflict resolution features, such as "Always ask" and "Keep both (create a copy)", are currently in development.
+
+### Delete Behaviour
+When a file is deleted on one device, the sync engine will delete it on your other devices to keep everything matched. This setting determines where that deleted local file goes:
+*   **System trash:** Moves the file to your OS Recycle Bin/Trash (Recommended).
+*   **Obsidian trash (.trash):** Moves the file to the hidden `.trash` folder inside your vault.
+*   **Delete permanently:** Completely wipes the file from your local disk.
+
+### Skip Files Larger Than (MB)
+You can set a maximum size limit to prevent massive files (like large videos or PDFs) from clogging up your sync or consuming your cloud storage. 
+* Setting this to `0` means all files will be synced regardless of size. 
+* If you set it to `5`, any single file that exceeds 5 MB will be entirely skipped by the sync engine.
+
+### Ignore Paths
+If there are specific folders, file types, or individual files you deliberately do not want to sync (e.g., a local-only scratchpad or temporary files), you can add them here. Enter one file path or glob pattern per line.
