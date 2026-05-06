@@ -133,7 +133,7 @@ A "conflict" happens if you edit the exact same file on two different devices be
 *   **Always keep local:** The device performing the sync always overrides the cloud version.
 *   **Always keep remote:** The cloud version always overrides the local device.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** More advanced conflict resolution features, such as "Always ask" and "Keep both (create a copy)", are currently in development.
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **Notice:** More advanced conflict resolution features, such as "Always ask" and "Keep both (create a copy)", are currently in development.
 
 ### Delete Behaviour
 When a file is deleted on one device, the sync engine will delete it on your other devices to keep everything matched. This setting determines where that deleted local file goes:
