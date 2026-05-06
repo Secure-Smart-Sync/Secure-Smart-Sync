@@ -20,11 +20,10 @@
   <a href="https://obsidian.md/sync">Obsidian Sync</a>
 </p>
 
-> <span style="display: flex; align-items: center;">
-> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="orange" style="margin-right: 8px;"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378c.626 1.17-.224 2.575-1.543 2.575H1.918c-1.319 0-2.17-1.405-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>
-> <b>IMPORTANT:</b> Read the <a href="./Usage_Guidelines.md">Usage Guidelines</a> before setup for optimal results.
-> </span>
-
+<span style="display: flex; align-items: center;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="orange" style="margin-right: 8px;"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378c.626 1.17-.224 2.575-1.543 2.575H1.918c-1.319 0-2.17-1.405-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>
+<b>IMPORTANT:</b> Read the <a href="./Usage_Guidelines.md">Usage Guidelines</a> before setup for optimal results.
+</span>
 
 ## What it does
 
