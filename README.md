@@ -24,7 +24,7 @@
   <source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg">
   <source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg">
   <img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center">
-</picture> <b>IMPORTANT:</b> Read the <a href="./Usage_Guidelines.md">Usage Guidelines</a> before setup for optimal results.
+</picture>   <b>IMPORTANT:</b> Read the <a href="./Usage_Guidelines.md">Usage Guidelines</a> before setup for optimal results.
 
 ## What it does
 
