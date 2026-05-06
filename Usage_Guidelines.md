@@ -21,7 +21,7 @@ SSS uses Cloudflare R2 as its remote storage backend. To use this plugin, you wi
 
 If you haven't already, you must enable the **R2 Subscription** in your Cloudflare dashboard to unlock their highly generous free tier. To do this, Cloudflare requires you to add a valid payment method, such as an international credit/debit card (Visa, Mastercard, etc.). For a full list of supported payment methods, please check out the [Cloudflare Billing Documentation](https://developers.cloudflare.com/billing/).
 
-> **💡 IMPORTANT NOTE ON BILLING:** 
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT NOTE ON BILLING:** 
 > Adding a billing method is strictly an industry-standard measure by Cloudflare to prevent bot abuse and spam. **It actually costs $0.00 to set up.** You will not be charged to activate R2, and as long as you stay within the free tier, you will never pay a cent.
 
 ## 3. Will I exceed the Free Tier?
@@ -57,7 +57,7 @@ Secure-Smart-Sync needs permission to talk to your new bucket. You will generate
 6. Under **Specify bucket(s)**, select **Apply to specific buckets only** and choose the bucket you just created.
 7. Click **Create API Token**.
 
-> **⚠️ CRITICAL:** The next screen will show your **Secret Access Key**. This will only be shown *once*. Do not close the window until you have copied these credentials into the plugin.
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** The next screen will show your **Secret Access Key**. This will only be shown *once*. Do not close the window until you have copied these credentials into the plugin.
 
 ## 6. Entering Credentials in Obsidian
 
@@ -72,7 +72,7 @@ Open your Obsidian settings and navigate to the Secure-Smart-Sync plugin options
 *   **Remote Prefix:** If you want to store your vault inside a specific folder within the bucket, enter the folder name here (e.g., `DesktopVault/`).
 *   **Sync .obsidian Config Directory:** Toggle this on if you want to sync your themes, snippets, and plugin settings alongside your markdown files.
 
-> **🔒 Privacy Note:** All of these credentials are saved locally on your device in plain text at `.obsidian/plugins/secure-smart-sync/data.json`. They are never transmitted anywhere except directly to Cloudflare.
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT PRIVACY NOTE:** All of these credentials are saved locally on your device in plain text at `.obsidian/plugins/secure-smart-sync/data.json`. They are never transmitted anywhere except directly to Cloudflare.
 
 You can click the **Test** button at the bottom of this section to verify that the plugin can successfully connect to your bucket.
 
@@ -83,7 +83,7 @@ Without a password, your files will be uploaded directly to Cloudflare. While Cl
 1. Enter a strong **Password** in the Encryption section.
 2. Select an **Encryption Method**. Either `openssl-base64` (encrypts content only) or `rclone-base64` (encrypts content *and* file names) is fine. 
 
-> **⚠️ WARNING:** **Do not change your encryption password or method after your first sync.** Doing so will make all existing files on the remote server unreadable to your local device. If you ever must change it, you will need to completely wipe your remote bucket and perform a full re-sync from scratch.
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** **Do not change your encryption password or method after your first sync.** Doing so will make all existing files on the remote server unreadable to your local device. If you ever must change it, you will need to completely wipe your remote bucket and perform a full re-sync from scratch.
 
 ## 8. Device Pairing (Setting up Mobile / Other Devices)
 
@@ -101,7 +101,7 @@ Entering long API keys and passwords on a mobile device is frustrating. We have 
 
 *Note: Pairing codes are single-use and expire after 10 minutes. If you are setting up three devices, you must generate a fresh code on the primary device for each new setup.*
 
-> **⚠️ WARNING:** It is absolutely critical that the **Password** and **Encryption Method** remain perfectly identical across all devices. If there is a mismatch, the devices will not be able to read each other's files, and the sync engine will likely create conflicting duplicate folders.
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** It is absolutely critical that the **Password** and **Encryption Method** remain perfectly identical across all devices. If there is a mismatch, the devices will not be able to read each other's files, and the sync engine will likely create conflicting duplicate folders.
 
 ## 9. The First Sync
 
