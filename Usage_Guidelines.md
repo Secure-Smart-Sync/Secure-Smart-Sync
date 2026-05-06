@@ -148,3 +148,31 @@ You can set a maximum size limit to prevent massive files (like large videos or 
 
 ### Ignore Paths
 If there are specific folders, file types, or individual files you deliberately do not want to sync (e.g., a local-only scratchpad or temporary files), you can add them here. Enter one file path or glob pattern per line.
+
+## 11. Automation
+
+Secure-Smart-Sync is designed to stay out of your way while keeping your files safe. There are two primary ways to handle automation: **Smart Sync** (Recommended) and **Manual Configuration**. 
+
+Regardless of which automation method you choose, you can always trigger a sync manually at any time using the ribbon icon or the Command Palette.
+
+### Method A: Smart Sync (Recommended)
+This is the default and highly recommended way to run the plugin. It is designed to be a "set-and-forget", highly reliable, long-term solution with dynamic conflict resolution baked in.
+
+If you toggle **Smart Sync** to **On**, all manual automation options are disabled. 
+
+*   **How it works:** Smart Sync watches your activity. When you stop typing, it waits a short period before silently pushing your changes to the cloud. 
+*   **Idle time before sync:** The only parameter you need to set. This dictates how many seconds the engine waits after you stop typing before it syncs. The default of `7` seconds is highly recommended.
+*   **Cross-Device Awareness:** Smart Sync automatically handles catching up when you first open the Obsidian app. Furthermore, when Device A finishes a sync, it relays a state change via the cloud. Device B (if open) will detect this and automatically pull the changes exactly 4 seconds later (or very shortly after).
+
+### Method B: Manual Configuration
+This method is for power users who need exact, granular control over when network requests are made. 
+
+If you turn Smart Sync **Off**, you can individually configure the following triggers:
+*   **Sync on App Open:** Triggers a sync 5 seconds after Obsidian launches.
+*   **Auto-Sync Interval (minutes):** Forces a sync every X minutes (0 to disable).
+*   **Sync on Save Debounce (seconds):** Triggers a sync X seconds after a file save is detected by the OS.
+*   **Sync on Idle (seconds):** Triggers a sync X seconds after you stop typing.
+
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Manual configuration does not feature the full, real-time cross-device awareness that Smart Sync provides. Unless you configure an "Auto-Sync Interval", your other devices will not automatically know if this device has synced. 
+
+While manual configuration can provide a highly stable system if configured correctly, it requires careful tuning. For more information on exact recommended manual configurations, please refer to the `docs` folder in the repository.
