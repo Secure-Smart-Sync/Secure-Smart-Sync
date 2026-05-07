@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="assets/icon_black_transparent.svg">
     <source media="(prefers-color-scheme: dark)"  srcset="assets/icon_white_transparent.svg">
-    <img src="assets/icon_white_transparent.svg" width="96" alt="Secure-Smart-Sync">
+    <img src="assets/icon_white_transparent.svg" width="150" alt="Secure-Smart-Sync">
   </picture>
 
   <h2>Secure-Smart-Sync</h2>
