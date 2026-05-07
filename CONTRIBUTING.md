@@ -26,11 +26,7 @@ If you want to get your hands dirty, pull requests are always welcome. Please lo
 
 To work on the plugin locally, you will need Node.js installed.
 
-1. **Fork the repository** on GitHub, then clone your fork locally:
-   ```bash
-   git clone [https://github.com/YOUR-USERNAME/Secure-Smart-Sync.git](https://github.com/YOUR-USERNAME/Secure-Smart-Sync.git)
-   cd Secure-Smart-Sync
-   ```
+1. **Fork the repository** on GitHub.
 2. **Install dependencies:**
    ```bash
    npm install
