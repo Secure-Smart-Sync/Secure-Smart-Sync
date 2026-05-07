@@ -52,4 +52,53 @@ The indicator:
 
 This approach preserved visibility without sacrificing usability.
 
-The full behavior and functionality of the indicator is documented separately.
+## Indicator Behavior
+
+When the plugin is idle, the icon remains **gray**.
+
+Clicking the gray icon triggers a manual sync and displays a toast notification, since toast notifications are intentionally preserved for manual sync actions.
+
+When Auto Sync or Smart Sync is enabled:
+
+- the icon turns **blue** in older versions
+- the icon turns **purple** in newer versions
+
+This indicates that sync is currently in progress.
+
+Clicking the icon during this state opens a small message bar that displays:
+
+- current sync progress
+- current sync status
+- number of files synced
+
+After a successful sync completion, the icon turns **green**.
+
+Clicking it displays:
+
+- successful sync confirmation
+- number of files synced successfully
+
+If something goes wrong, the icon turns **red**.
+
+This can represent issues such as:
+
+- R2 configuration problems
+- network failures
+- authentication issues
+- other sync failures
+
+Clicking the red state provides detailed information about what went wrong.
+
+## Design Outcome
+
+The goal was to deliver complete sync visibility while using minimal interface space.
+
+Expanding detailed information only when the user intentionally clicks the icon turned out to be the right design decision.
+
+It keeps the mobile writing experience non-intrusive while still ensuring that users are never blind to background sync behavior.
+
+A similar approach was implemented on desktop.
+
+Instead of introducing a separate status indicator, the existing ribbon icon uses the same color cues.
+
+Desktop users also continue to benefit from the existing status bar for persistent sync visibility.
