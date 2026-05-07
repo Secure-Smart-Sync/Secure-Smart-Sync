@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="assets/icon_black_transparent.svg">
     <source media="(prefers-color-scheme: dark)"  srcset="assets/icon_white_transparent.svg">
-    <img src="assets/icon_white_transparent.svg" width="96" alt="Secure-Smart-Sync">
+    <img src="assets/icon_white_transparent.svg" width="120" alt="Secure-Smart-Sync">
   </picture>
 
   <h2>Secure-Smart-Sync</h2>
@@ -128,7 +128,7 @@ Open the SSS settings tab, expand **Configure Connection**, enter your R2 endpoi
 |---|---|
 | [Usage Guidelines](./Usage_Guidelines.md) | Initial setup, configuration reference, and day-to-day usage |
 | [Security](./SECURITY.md) | Cryptographic methods, architecture, and threat model |
-| [R2 Usage & Limits](./docs/Token_usage_scenarios.md) | Free-tier op analysis across vault sizes and device counts |
+| [R2 Usage & Limits](./docs/token_usage_scenarios.md) | Free-tier op analysis across vault sizes and device counts |
 | [Contributing](./CONTRIBUTING.md) | Bug reports, pull requests, and documentation |
 
 
