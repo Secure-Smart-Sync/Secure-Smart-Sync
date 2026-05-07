@@ -165,8 +165,9 @@ If SSS is useful to you, consider supporting its development.
 <br>
 
 <a href="https://ko-fi.com/xensenx">
-  <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi" height="36">
+  <img src="assets/Ko-fi_white.svg" alt="Alt Text" width="200">
 </a>
+
 
 <br><br>
 
