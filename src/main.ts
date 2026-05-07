@@ -101,6 +101,13 @@ export default class SSSPlugin extends Plugin {
   private smartSyncPostPollTimer?: ReturnType<typeof setTimeout>;
   /** Recreatable idle debounce shared by Smart Sync and legacy on-idle mode. */
   private idleDebounceFunc?: { (): void; cancel(): void; flush(): void };
+  /**
+   * Timestamp of the last time the app came to foreground on mobile.
+   * Used by _adaptivePollIntervalMs() to keep polling at 4 s for a short
+   * window after the user switches back to Obsidian, even if they haven’t
+   * typed anything yet.
+   */
+  private _lastForegroundAt = 0;
 
   // ── Ribbon indicator state ───────────────────────────────────────────
   private ribbonEl?: HTMLElement;
@@ -167,6 +174,10 @@ export default class SSSPlugin extends Plugin {
 
     this.addSettingTab(new SSSSettingTab(this.app, this));
     this.scheduleAutoSync();
+    // On mobile, treat plugin load as a foreground event so the sentinel poll
+    // loop starts at 4 s from the very first tick, not the 30 s idle interval.
+    // Without this, mobile misses PC changes for up to 30 s after startup sync.
+    if (Platform.isMobile) this._lastForegroundAt = Date.now();
     this.scheduleSentinelPoll();
     this.registerOnSaveHandler();
 
@@ -277,13 +288,18 @@ export default class SSSPlugin extends Plugin {
         this.settings.lastSyncedAt = now;
         await this.saveSettings();
         await insertSyncHistoryEntry(this.db, this.vaultId, JSON.stringify(stats));
-        // Write sentinel so other devices detect this sync via polling.
-        // state_aware syncs never write the sentinel — that's what stops A→B→A cascades.
-        if (trigger !== "state_aware") {
+        // Only write the sentinel when this sync actually pushed something
+        // to remote.  Writing it when nothing changed (pull-only, or no-op)
+        // would wake every other device for nothing.
+        //
+        // state_aware syncs never write the sentinel — that breaks the
+        // A→B→A cascade chain entirely.
+        const remoteWasModified = stats.filesUploaded > 0 || stats.conflictsResolved > 0;
+
+        if (trigger !== "state_aware" && remoteWasModified) {
           await this.writeSentinel();
-          // Smart Sync: schedule a one-shot poll 2s after the sentinel lands.
-          // This catches the case where another device synced at the same time
-          // and we need to pull its changes immediately.
+          // Smart Sync: schedule a one-shot poll shortly after the sentinel
+          // lands so we immediately detect if another device also synced.
           if (this.settings.smartSync) {
             if (this.smartSyncPostPollTimer !== undefined) {
               window.clearTimeout(this.smartSyncPostPollTimer);
@@ -291,7 +307,7 @@ export default class SSSPlugin extends Plugin {
             this.smartSyncPostPollTimer = window.setTimeout(() => {
               this.smartSyncPostPollTimer = undefined;
               void this.pollSentinel();
-            }, 2000);
+            }, this.settings.postSyncRePollMs ?? 500);
           }
         }
       }
@@ -307,6 +323,12 @@ export default class SSSPlugin extends Plugin {
       await setLastFailedSync(this.db, this.vaultId, Date.now());
     } finally {
       this.isSyncing = false;
+      // If a foreign sentinel was detected while this sync was running,
+      // fire a follow-up state_aware sync now that we are free again.
+      if (this._pendingStateAwareSync) {
+        this._pendingStateAwareSync = false;
+        window.setTimeout(() => void this.triggerSync("state_aware"), 0);
+      }
     }
   }
 
@@ -333,13 +355,42 @@ export default class SSSPlugin extends Plugin {
       ? new StorageEncrypt(rawRemote, settings.encryptionPassword, settings.encryptionMethod)
       : rawRemote;
 
-    const connected = await rawRemote.checkConnection((err) => {
+    // ── Fire all independent IO simultaneously to cut startup latency ────────
+    // Connection check, local walk, prevSync DB read, and (if encryption is
+    // configured) password validation all start right away.  Only the
+    // connection check is awaited early — to surface a clear error before
+    // walk failures do — everything else resolves in the background.
+    const connectionP = rawRemote.checkConnection((err) => {
       this.logger.error("R2 connection failed:", toText(err));
     });
-    if (!connected) throw new Error("Cannot connect to R2. Check your credentials and endpoint.");
+    const localWalkP  = local.walk();
+    const prevSyncP   = getAllPrevSyncRecords(this.db, this.vaultId);
+    // Remote walk starts immediately; if unreachable it will reject, which
+    // Promise.all will surface after we've already shown the friendly error.
+    const remoteWalkP = remote.walk();
 
+    const connected = await connectionP;
+    if (!connected) {
+      // Suppress unhandled rejections from the already-started walks.
+      localWalkP.catch(() => {});
+      remoteWalkP.catch(() => {});
+      throw new Error("Cannot connect to R2. Check your credentials and endpoint.");
+    }
+
+    // Kick off password validation while the walks are still in flight.
+    let passwordCheckP: Promise<{ ok: boolean; reason?: string }> | undefined;
     if (settings.encryptionPassword && remote instanceof StorageEncrypt) {
-      const check = await remote.validatePassword();
+      passwordCheckP = remote.validatePassword();
+    }
+
+    this.logger.info("Walking local, prevSync, remote…");
+    const [localEntities, prevSyncEntities, remoteEntities] = await Promise.all([
+      localWalkP, prevSyncP, remoteWalkP,
+    ]);
+
+    // Await password check (likely already resolved alongside the walks).
+    if (passwordCheckP) {
+      const check = await passwordCheckP;
       if (!check.ok) {
         throw new Error(
           `Encryption password check failed: ${check.reason}. ` +
@@ -347,13 +398,6 @@ export default class SSSPlugin extends Plugin {
         );
       }
     }
-
-    this.logger.info("Walking local, prevSync, remote…");
-    const [localEntities, prevSyncEntities, remoteEntities] = await Promise.all([
-      local.walk(),
-      getAllPrevSyncRecords(this.db, this.vaultId),
-      remote.walk(),
-    ]);
 
     this.logger.info(
       `Entities: local=${localEntities.length}, prev=${prevSyncEntities.length}, remote=${remoteEntities.length}`
@@ -377,7 +421,7 @@ export default class SSSPlugin extends Plugin {
 
     const stats = await executeTasks({
       local, remote, tasks,
-      concurrency: settings.r2.partsConcurrency ?? 5,
+      concurrency: settings.r2.partsConcurrency ?? 8,
       logger: this.logger,
       onProgress: (_done, _total, _key) => {
         this.syncProgress = { done: _done, total: _total };
@@ -419,7 +463,7 @@ export default class SSSPlugin extends Plugin {
         .filter(Boolean)
     );
 
-    const prevSyncQueue = new PQueue({ concurrency: 8 });
+    const prevSyncQueue = new PQueue({ concurrency: 12 });
 
     for (const task of tasks) {
       // Folders don't need prevSync records
@@ -605,7 +649,7 @@ export default class SSSPlugin extends Plugin {
     this.idleDebounceFunc?.cancel();
 
     const ms = this.settings.smartSync
-      ? (this.settings.smartSyncIdleSeconds ?? 7) * 1000
+      ? (this.settings.smartSyncIdleSeconds ?? 4) * 1000
       : this.settings.syncOnIdleMs;
 
     if (ms > 0) {
@@ -624,7 +668,27 @@ export default class SSSPlugin extends Plugin {
    * detect the foreign write and fire a state_aware sync automatically.
    */
   private runSmartSyncOnOpen(): void {
+    // Poll sentinel 3 s after load to detect changes pushed by other devices
+    // while this one was closed.
     window.setTimeout(() => void this.pollSentinel(), 3000);
+
+    // Also trigger a direct init sync if it has been a while since the last
+    // sync.  This catches two cases the sentinel poll cannot:
+    //   1. Local files changed while Obsidian was closed (e.g. edited via
+    //      another app or via the file system directly) — those need pushing.
+    //   2. On mobile: the OS may have killed the process; any remote changes
+    //      since the last run need pulling even if no sentinel was written.
+    //
+    // Delay is longer on desktop (8 s) to let the workspace fully settle
+    // before hitting the network; mobile uses 5 s since it restores faster.
+    const delay = Platform.isMobile ? 5000 : 8000;
+    window.setTimeout(() => {
+      if (this.isSyncing) return; // sentinel poll already started a sync
+      const elapsed = Date.now() - (this.settings.lastSyncedAt ?? 0);
+      if (elapsed > 2 * 60 * 1000) {
+        void this.triggerSync("init");
+      }
+    }, delay);
   }
 
   /**
@@ -658,7 +722,12 @@ export default class SSSPlugin extends Plugin {
         // Restart the interval, then poll immediately so the user doesn’t
         // wait a full 30s to receive changes made while they were away.
         this.scheduleSentinelPoll();
-        void this.pollSentinel();
+        // Immediate poll + foreground timestamp only matter for Smart Sync.
+        // In legacy mode the 60 s interval is sufficient.
+        if (this.settings.smartSync) {
+          void this.pollSentinel();
+          if (Platform.isMobile) this._lastForegroundAt = Date.now();
+        }
       }
     };
     document.addEventListener("visibilitychange", handler);
@@ -812,6 +881,20 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
     el.addEventListener("click", () => this.handleMobileIndicatorClick());
     this.mobileIndicatorEl = el;
     this.setupMobileVisibilityWatcher();
+    // Obsidian fires layout-change whenever the sidebar opens/closes on mobile.
+    // This is more reliable than MutationObserver for catching the drawer state
+    // because Obsidian may drive the animation via JS rather than CSS classes.
+    this.registerEvent(
+      (this.app.workspace as any).on("layout-change", () => {
+        // Immediate: catches the workspace-model flip (zero animation lag).
+        this.refreshMobileIndicatorVisibility();
+        // 50 ms re-check: by then the CSS transition has started and the
+        // bounding rect reliably reflects the drawer's direction of travel.
+        // This is the fallback for builds where leftSplit.collapsed isn't
+        // a plain boolean and the model check above returns false.
+        window.setTimeout(() => this.refreshMobileIndicatorVisibility(), 50);
+      })
+    );
   }
 
   /**
@@ -942,7 +1025,7 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
   private setupMobileVisibilityWatcher(): void {
     const refresh = () => this.refreshMobileIndicatorVisibility();
 
-    // ── Body observer (childList + own class changes) ──────────────────────────
+    // ── Notice container observer ──────────────────────────────────────────────
     let noticeContainerObserver: MutationObserver | undefined;
 
     const attachNoticeObserver = (container: Element) => {
@@ -955,9 +1038,31 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
     const existingNc = document.body.querySelector(".notice-container");
     if (existingNc) attachNoticeObserver(existingNc);
 
+    // ── Mobile drawer observer (lazy) ──────────────────────────────────────────
+    // The left-sidebar on mobile slides in as .workspace-drawer.mod-left and
+    // signals open/close via the .is-open class — it does NOT add/remove DOM
+    // nodes, so we need an attribute observer on the element itself.  Attach
+    // it lazily because the drawer may not exist at plugin load time.
+    let drawerObserver: MutationObserver | undefined;
+
+    const attachDrawerObserver = (drawer: Element) => {
+      if (drawerObserver) return;
+      drawerObserver = new MutationObserver(refresh);
+      drawerObserver.observe(drawer, { attributes: true, attributeFilter: ["class", "style"] });
+    };
+
+    const existingDrawer = document.body.querySelector(".workspace-drawer.mod-left");
+    if (existingDrawer) attachDrawerObserver(existingDrawer);
+
+    // ── Body observer (childList + own class changes) ──────────────────────────
     const bodyObserver = new MutationObserver(() => {
       const nc = document.body.querySelector(".notice-container");
       if (nc) attachNoticeObserver(nc);
+      // Lazily latch onto the drawer the first time it appears in the DOM.
+      if (!drawerObserver) {
+        const drawer = document.body.querySelector(".workspace-drawer.mod-left");
+        if (drawer) attachDrawerObserver(drawer);
+      }
       refresh();
     });
     // childList catches modal/prompt injection; attributes catches sidebar class on <body>.
@@ -980,12 +1085,13 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
 
     // ── Unified handle ─────────────────────────────────────────────────────────
     // teardownMobileIndicator() calls disconnect() on this.mobileVisibilityObserver.
-    // Wrap all three observers so one disconnect() call cleans them all up.
+    // Wrap all observers so one disconnect() call cleans them all up.
     this.mobileVisibilityObserver = {
       disconnect() {
         bodyObserver.disconnect();
         noticeContainerObserver?.disconnect();
         workspaceObserver?.disconnect();
+        drawerObserver?.disconnect();
       },
       observe()     {},           // unused — satisfies MutationObserver shape
       takeRecords:  () => [],
@@ -1014,10 +1120,25 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
     const noticeContainer = document.body.querySelector(".notice-container");
     const hasNotices = !!noticeContainer && noticeContainer.childElementCount > 0;
 
+    // Workspace-model check: Obsidian flips leftSplit.collapsed at the moment
+    // the toggle is pressed, before the CSS animation starts. This is the only
+    // signal that fires with zero animation lag.
+    // Safe with `as any` — if the property is absent it evaluates to !!(undefined)
+    // which is false, so we simply fall through to the DOM checks below.
+    const ws = this.app.workspace as any;
+    const wsModelOpen = !!(ws.leftSplit && ws.leftSplit.collapsed === false);
+
     const sidebarOpen =
+      wsModelOpen ||
       document.body.classList.contains("is-left-sidebar-open") ||
       !!document.body.querySelector(".workspace.is-left-sidebar-open") ||
-      !!document.body.querySelector(".app-container.is-left-sidebar-open");
+      !!document.body.querySelector(".app-container.is-left-sidebar-open") ||
+      // Physical fallback via bounding rect — reliable after animation starts.
+      (() => {
+        const d = document.body.querySelector<HTMLElement>(".workspace-drawer.mod-left");
+        if (!d) return false;
+        return d.classList.contains("is-open") || d.getBoundingClientRect().right > 10;
+      })();
 
     const shouldHide = hasModal || hasPrompt || hasNotices || sidebarOpen;
     el.classList.toggle("sss-mob-hidden", shouldHide);
@@ -1034,6 +1155,13 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
   private get sentinelKey(): string {
     return "__sss_state__/sync.json";
   }
+
+  /**
+   * When a foreign sentinel is detected but a sync is already running,
+   * we cannot start another immediately. This flag tells triggerSync()
+   * to fire one state_aware sync after the current one finishes.
+   */
+  private _pendingStateAwareSync = false;
 
   /** Write sentinel to R2 after a real sync. Non-fatal on failure. */
   private async writeSentinel(): Promise<void> {
@@ -1069,16 +1197,38 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
       // Only react if this is a write we haven't seen before.
       if (remoteTs <= this.lastSeenSentinelAt) return;
       // Read the sentinel to check device ownership.
-      const raw  = await remote.readFile(this.sentinelKey);
-      const data = JSON.parse(new TextDecoder().decode(raw));
-      // Update seen-timestamp regardless of whether we react,
-      // so a second poll before we finish syncing doesn't re-trigger.
+      const raw = await remote.readFile(this.sentinelKey);
+
+      // Safe parse: a corrupted or partially-written sentinel must not crash
+      // the poll loop.  Skip this version and wait for the next clean write.
+      let data: { deviceId?: string; syncedAt?: number };
+      try {
+        data = JSON.parse(new TextDecoder().decode(raw));
+      } catch {
+        this.logger.warn("[SSS] Sentinel has invalid JSON — ignoring this version.");
+        this.lastSeenSentinelAt = remoteTs; // skip corrupt write
+        return;
+      }
+
+      // Our own write — mark seen, no action needed.
+      if (data.deviceId === this.settings._deviceId) {
+        this.lastSeenSentinelAt = remoteTs;
+        return;
+      }
+
+      // Foreign write detected.  If we are already syncing we cannot start
+      // another one right now.  Set the pending flag WITHOUT updating
+      // lastSeenSentinelAt so the next poll re-evaluates this sentinel and
+      // the changes from the foreign device are not silently lost.
+      if (this.isSyncing) {
+        this._pendingStateAwareSync = true;
+        return;
+      }
+
+      // Commit seen-timestamp before triggering so a concurrent poll tick
+      // cannot double-trigger before triggerSync() returns.
       this.lastSeenSentinelAt = remoteTs;
-      if (data.deviceId === this.settings._deviceId) return; // our own write
-      // vaultId check removed: _vaultId is never shared during pairing, so
-      // Device A and Device B always have different vaultIds. The bucket +
-      // prefix already scopes the sentinel to the correct vault.
-      this.logger.info(`[SSS] State change detected from device ${data.deviceId}, triggering sync`);
+      this.logger.info(`[SSS] State change from device ${data.deviceId}, triggering sync`);
       await this.triggerSync("state_aware");
     } catch (err) {
       const msg        = (err as Error).message ?? "";
@@ -1113,8 +1263,14 @@ c1.31 0.12 3.77 0.05 5.25 -0.14z
    */
   private _adaptivePollIntervalMs(): number {
     if (!this.settings.smartSync) return 60_000;
-    const msSinceEdit = Date.now() - this._lastEditAt;
-    return msSinceEdit < 2 * 60 * 1000 ? 4_000 : 30_000;
+    // Use whichever activity signal is most recent: last keystroke or last
+    // foreground event (mobile only). This keeps the poll fast for 2 min
+    // after the user returns to Obsidian, even before they start typing.
+    const mostRecentActivity = Math.max(this._lastEditAt, this._lastForegroundAt);
+    const msSinceActivity    = Date.now() - mostRecentActivity;
+    const active = this.settings.activePollIntervalMs ?? 2_000;
+    const idle   = this.settings.idlePollIntervalMs   ?? 30_000;
+    return msSinceActivity < 2 * 60 * 1000 ? active : idle;
   }
 
   /**

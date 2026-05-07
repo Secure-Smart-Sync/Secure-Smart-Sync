@@ -22,21 +22,48 @@ function formatSyncDate(ms: number): string {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 
-/** Returns whichever relay URL is active given current settings. */
 function activeRelayUrl(plugin: SSSPlugin): string {
   return plugin.settings.useCustomRelay && plugin.settings.customRelayUrl
     ? plugin.settings.customRelayUrl
     : DEFAULT_RELAY_URL;
 }
 
-// ─── SSS logo SVG (inline, themed via currentColor) ──────────────────────────
-// Scaled from 2048×2048 source to a compact header badge.
+/** Open a URL in the system browser — works on Obsidian mobile and desktop. */
+function openUrl(url: string): void {
+  window.open(url, "_blank");
+}
+
+// ─── Inline SVG icons ────────────────────────────────────────────────────────
 
 const SSS_HEADER_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
-  viewBox="0 0 2048 2048" width="36" height="36" aria-hidden="true">
+  viewBox="0 0 2048 2048" width="40" height="40" aria-hidden="true">
   <g fill="currentColor">
     <path d="M955 1921.80 c-153.40 -11.80 -301.40 -63.40 -431 -150.40 -78.40 -52.60 -152.20 -121.60 -212.20 -198.40 -93.80 -120.20 -157.60 -273.40 -176.60 -425 -8.20 -64.40 -9.20 -160 -2.40 -221 11.40 -100.60 41 -203 84.80 -292 114.40 -232.20 319 -403.80 563.40 -472.80 108.80 -30.60 220.60 -40.40 335 -29 426.20 42.20 769.60 393.60 802.20 821 3.40 46.80 1.40 148.20 -4 187.80 -18.20 133.20 -54.40 238.40 -120 347 -43.40 72 -99.40 140.80 -158.20 194.60 -152.80 139.80 -341.40 222.80 -541.80 238.40 -30.20 2.20 -108.80 2.20 -139.20 -0.20z m138.40 -326.80 c180.40 -23.80 350.80 -139.60 419.60 -286 23.20 -49 35.20 -104.80 32.20 -148.60 -8.80 -124.60 -94 -237.60 -207.80 -275.40 -51.20 -17 -92.40 -19 -140.20 -6.80 -17.60 4.60 -41.20 13.40 -41.20 15.80 0 0.80 2 3 4.20 5.20 7.60 6.80 39 49.80 49.80 68.20 23.60 39.80 30 53.40 30 64 0 23.60 -5 23.20 -145 -12.80 -60.40 -15.60 -142.80 -36.60 -183 -46.60 -40.20 -10.20 -75.40 -19.60 -78.20 -21.20 -6.60 -3.20 -7.80 -6.40 -7.80 -18.80 0 -12 2.60 -15.40 30.80 -39.60 103.80 -89.80 232.60 -143.80 371.20 -156.40 34 -3 110.40 -2.40 142 1 50.60 5.60 98 15.80 139.60 29.80 11.20 3.80 20.40 6.60 20.40 6 0 -0.40 -4.60 -10 -10.20 -21 -36.40 -72.80 -100.60 -147.40 -168 -195 -91 -64.60 -186.60 -98.80 -297.80 -106.80 -59.20 -4.20 -134.20 5.80 -198 26.40 -136.40 44.20 -249 137.20 -311.80 257.80 -38.40 73.80 -54 156.20 -42.40 224.20 14.80 85.80 59 156.80 128.60 206.60 55.80 40 134 62 195.20 55.20 19.60 -2.20 47.20 -7.40 51 -9.60 0.80 -0.40 -1.60 -4.60 -5.40 -9.20 -14.60 -18 -33.80 -48.80 -47.20 -75.40 -12.60 -25 -14 -29.20 -14 -39.60 0 -6.40 1 -12.60 2.40 -14 6.20 -6.20 25.40 -2.80 137.60 25.60 61 15.40 140.20 35.20 176 44 35.80 8.80 67 17 69.60 18 3.80 1.60 4.40 3.40 4.40 14.60 0 12 -0.40 13 -7.40 19.80 -23 21.80 -73.20 56.20 -111.40 76.60 -76.80 40.60 -159.20 65.40 -242.80 73 -34.80 3.20 -125 1.60 -156.40 -2.80 -36.20 -5.20 -84.20 -16.60 -119 -28.20 -17.60 -6 -32.20 -10.60 -32.40 -10.20 -1.40 1.40 22 39.80 37.20 60.80 94.40 132.20 250.20 219.40 418.20 234.20 26.80 2.40 77.20 1 107.40 -2.80z"/>
   </g>
+</svg>`;
+
+const GITHUB_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+  <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+</svg>`;
+
+const KOFI_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+  <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.77s1.971.551 1.971 2.638c0 1.913-.985 2.659-2.059 3.015z"/>
+</svg>`;
+
+const GLOBE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <circle cx="12" cy="12" r="10"/>
+  <line x1="2" y1="12" x2="22" y2="12"/>
+  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+</svg>`;
+
+const CHEVRON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="sss-chevron">
+  <polyline points="9 18 15 12 9 6"/>
+</svg>`;
+
+const EXTLINK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+  <polyline points="15 3 21 3 21 9"/>
+  <line x1="10" y1="14" x2="21" y2="3"/>
 </svg>`;
 
 // ─── Pairing Send Modal ───────────────────────────────────────────────────────
@@ -108,6 +135,8 @@ class PairingSendModal extends Modal {
 export class SSSSettingTab extends PluginSettingTab {
   private readonly plugin: SSSPlugin;
   private connectionResultEl?: HTMLElement;
+  /** Tracks whether the R2 connection block is expanded. Survives re-renders. */
+  private _r2Open = false;
 
   constructor(app: App, plugin: SSSPlugin) {
     super(app, plugin);
@@ -118,7 +147,9 @@ export class SSSSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    // ── Header: logo + name + last synced ────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    // HEADER
+    // ═══════════════════════════════════════════════════════════════════
 
     const header = containerEl.createDiv({ cls: "sss-header" });
 
@@ -134,19 +165,21 @@ export class SSSSettingTab extends PluginSettingTab {
       cls: "sss-header-subtitle",
     });
 
-    // ── Pair Devices ──────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    // 1. DEVICES  — pair + R2 connection (collapsed by default)
+    // ═══════════════════════════════════════════════════════════════════
 
-    containerEl.createEl("h3", { text: "Pair Devices" });
+    this._sectionHeading(containerEl, "Devices");
 
-    // Generate code (sender side)
+    // ── Pair: generate code ──────────────────────────────────────────
     new Setting(containerEl)
-      .setName("Share to another device")
-      .setDesc("Generates a 10-minute code. Enter it in SSS settings on the other device.")
+      .setName("Pair to another device")
+      .setDesc("Generates a one-time 10-minute code. Enter it in SSS on the other device.")
       .addButton((btn) =>
         btn.setButtonText("Generate Code").setCta().onClick(async () => {
           const { endpoint, bucketName, accessKeyId, secretAccessKey } = this.plugin.settings.r2;
           if (!endpoint || !bucketName || !accessKeyId || !secretAccessKey) {
-            new Notice("Fill in your R2 credentials first.");
+            new Notice("Configure your R2 connection first.");
             return;
           }
           btn.setDisabled(true);
@@ -166,7 +199,7 @@ export class SSSSettingTab extends PluginSettingTab {
         })
       );
 
-    // Enter code (receiver side) — compact: input + button in one row, status below
+    // ── Pair: enter code (receive side) ─────────────────────────────
     const receiveRow = containerEl.createDiv({ cls: "sss-receive-row" });
 
     const codeInput = receiveRow.createEl("input", {
@@ -178,7 +211,10 @@ export class SSSSettingTab extends PluginSettingTab {
     (codeInput as HTMLInputElement).spellcheck   = false;
     (codeInput as HTMLInputElement).autocomplete = "off";
 
-    const importBtn = receiveRow.createEl("button", { text: "Import Code", cls: "mod-cta sss-receive-btn" });
+    const importBtn = receiveRow.createEl("button", {
+      text: "Import Code",
+      cls: "mod-cta sss-receive-btn",
+    });
     const receiveStatus = containerEl.createDiv({ cls: "sss-receive-status" });
 
     const doImport = async () => {
@@ -202,6 +238,7 @@ export class SSSSettingTab extends PluginSettingTab {
         (codeInput as HTMLInputElement).value = "";
         receiveStatus.textContent = "Credentials imported. Test your connection below.";
         receiveStatus.className   = "sss-receive-status sss-receive-ok";
+        this._r2Open = true;  // auto-expand so user can verify + test
         this.display();
       } catch (e) {
         receiveStatus.textContent = (e as Error).message;
@@ -217,99 +254,147 @@ export class SSSSettingTab extends PluginSettingTab {
       if (e.key === "Enter") doImport();
     });
 
-    // ── R2 Connection ─────────────────────────────────────────────────────────
+    // ── R2 Connection: collapsible ────────────────────────────────────
+    const r2Row = containerEl.createDiv({ cls: "sss-configure-row" });
 
-    containerEl.createEl("h3", { text: "Cloudflare R2" });
+    const r2Info = r2Row.createDiv({ cls: "sss-configure-label" });
+    r2Info.createEl("span", { text: "Cloudflare R2 Connection", cls: "sss-configure-title" });
 
-    new Setting(containerEl)
-      .setName("Endpoint")
-      .setDesc("https://<account-id>.r2.cloudflarestorage.com")
-      .addText((text) =>
-        text
-          .setPlaceholder("https://xxxx.r2.cloudflarestorage.com")
-          .setValue(this.plugin.settings.r2.endpoint)
-          .onChange(async (v) => { this.plugin.settings.r2.endpoint = v.trim(); await this.plugin.saveSettings(); })
-      );
+    const hasR2 = !!(this.plugin.settings.r2.endpoint && this.plugin.settings.r2.bucketName);
+    r2Info.createEl("span", {
+      text: hasR2 ? "Configured" : "Not configured",
+      cls: `sss-configure-badge ${hasR2 ? "sss-badge-ok" : "sss-badge-warn"}`,
+    });
 
-    new Setting(containerEl)
-      .setName("Bucket")
-      .addText((text) =>
-        text
-          .setPlaceholder("my-obsidian-vault")
-          .setValue(this.plugin.settings.r2.bucketName)
-          .onChange(async (v) => { this.plugin.settings.r2.bucketName = v.trim(); await this.plugin.saveSettings(); })
-      );
+    const r2Btn = r2Row.createEl("button", {
+      cls: `sss-configure-btn${this._r2Open ? " is-open" : ""}`,
+    });
+    r2Btn.innerHTML = `${this._r2Open ? "Close" : "Configure"}${CHEVRON_SVG}`;
+    r2Btn.addEventListener("click", () => {
+      this._r2Open = !this._r2Open;
+      this.display();
+    });
 
-    new Setting(containerEl)
-      .setName("Access Key ID")
-      .addText((text) =>
-        text
-          .setPlaceholder("R2 Access Key ID")
-          .setValue(this.plugin.settings.r2.accessKeyId)
-          .onChange(async (v) => { this.plugin.settings.r2.accessKeyId = v.trim(); await this.plugin.saveSettings(); })
-      );
+    if (this._r2Open) {
+      const r2Block = containerEl.createDiv({ cls: "sss-r2-block" });
 
-    new Setting(containerEl)
-      .setName("Secret Access Key")
-      .addText((text) => {
-        text
-          .setPlaceholder("R2 Secret Access Key")
-          .setValue(this.plugin.settings.r2.secretAccessKey)
-          .onChange(async (v) => { this.plugin.settings.r2.secretAccessKey = v.trim(); await this.plugin.saveSettings(); });
-        text.inputEl.type = "password";
-        text.inputEl.id   = "sss-secret-key";
-      })
-      .addButton((btn) =>
-        btn.setButtonText("Show").onClick(() => {
-          const input = containerEl.querySelector<HTMLInputElement>("#sss-secret-key");
-          if (!input) return;
-          const hidden = input.type === "password";
-          input.type = hidden ? "text" : "password";
-          btn.setButtonText(hidden ? "Hide" : "Show");
+      new Setting(r2Block)
+        .setName("Endpoint")
+        .setDesc("https://<account-id>.r2.cloudflarestorage.com")
+        .addText((text) =>
+          text
+            .setPlaceholder("https://xxxx.r2.cloudflarestorage.com")
+            .setValue(this.plugin.settings.r2.endpoint)
+            .onChange(async (v) => {
+              this.plugin.settings.r2.endpoint = v.trim();
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(r2Block)
+        .setName("Bucket")
+        .addText((text) =>
+          text
+            .setPlaceholder("my-obsidian-vault")
+            .setValue(this.plugin.settings.r2.bucketName)
+            .onChange(async (v) => {
+              this.plugin.settings.r2.bucketName = v.trim();
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(r2Block)
+        .setName("Access Key ID")
+        .addText((text) =>
+          text
+            .setPlaceholder("R2 Access Key ID")
+            .setValue(this.plugin.settings.r2.accessKeyId)
+            .onChange(async (v) => {
+              this.plugin.settings.r2.accessKeyId = v.trim();
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(r2Block)
+        .setName("Secret Access Key")
+        .addText((text) => {
+          text
+            .setPlaceholder("R2 Secret Access Key")
+            .setValue(this.plugin.settings.r2.secretAccessKey)
+            .onChange(async (v) => {
+              this.plugin.settings.r2.secretAccessKey = v.trim();
+              await this.plugin.saveSettings();
+            });
+          text.inputEl.type = "password";
+          text.inputEl.id   = "sss-secret-key";
         })
-      );
+        .addButton((btn) =>
+          btn.setButtonText("Show").onClick(() => {
+            const input = r2Block.querySelector<HTMLInputElement>("#sss-secret-key");
+            if (!input) return;
+            const hidden = input.type === "password";
+            input.type = hidden ? "text" : "password";
+            btn.setButtonText(hidden ? "Hide" : "Show");
+          })
+        );
 
-    new Setting(containerEl)
-      .setName("Remote Prefix")
-      .setDesc("Optional sub-folder inside the bucket, e.g. my-vault/")
-      .addText((text) =>
-        text
-          .setPlaceholder("my-vault/")
-          .setValue(this.plugin.settings.r2.remotePrefix ?? "")
-          .onChange(async (v) => { this.plugin.settings.r2.remotePrefix = v.trim(); await this.plugin.saveSettings(); })
-      );
+      new Setting(r2Block)
+        .setName("Remote Prefix")
+        .setDesc("Optional sub-folder inside the bucket, e.g. my-vault/")
+        .addText((text) =>
+          text
+            .setPlaceholder("my-vault/")
+            .setValue(this.plugin.settings.r2.remotePrefix ?? "")
+            .onChange(async (v) => {
+              this.plugin.settings.r2.remotePrefix = v.trim();
+              await this.plugin.saveSettings();
+            })
+        );
 
-    const connTestSetting = new Setting(containerEl)
-      .setName("Test Connection")
-      .addButton((btn) =>
-        btn.setButtonText("Test").onClick(async () => {
-          btn.setDisabled(true);
-          btn.setButtonText("Testing…");
-          this._setConnectionResult("", "");
-          const r2 = new StorageR2(this.plugin.settings.r2);
-          let errorMsg = "";
-          const ok = await r2.checkConnection((err) => { errorMsg = (err as Error).message ?? String(err); });
-          btn.setDisabled(false);
-          btn.setButtonText("Test");
-          if (ok) { this._setConnectionResult("Connected successfully", "sss-conn-ok"); }
-          else     { this._setConnectionResult(`Failed: ${errorMsg}`, "sss-conn-err"); }
-        })
-      );
+      const connTestSetting = new Setting(r2Block)
+        .setName("Test Connection")
+        .addButton((btn) =>
+          btn.setButtonText("Test").onClick(async () => {
+            btn.setDisabled(true);
+            btn.setButtonText("Testing…");
+            this._setConnectionResult("", "");
+            const r2 = new StorageR2(this.plugin.settings.r2);
+            let errorMsg = "";
+            const ok = await r2.checkConnection(
+              (err) => { errorMsg = (err as Error).message ?? String(err); }
+            );
+            btn.setDisabled(false);
+            btn.setButtonText("Test");
+            if (ok) { this._setConnectionResult("Connected successfully", "sss-conn-ok"); }
+            else     { this._setConnectionResult(`Failed: ${errorMsg}`, "sss-conn-err"); }
+          })
+        );
 
-    this.connectionResultEl = connTestSetting.settingEl.createEl("div", { cls: "sss-conn-result" });
+      this.connectionResultEl = connTestSetting.settingEl.createEl("div", {
+        cls: "sss-conn-result",
+      });
+    }
 
-    // ── Encryption ────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    // 2. ENCRYPTION
+    // ═══════════════════════════════════════════════════════════════════
 
-    containerEl.createEl("h3", { text: "Encryption" });
+    this._sectionHeading(containerEl, "Encryption");
 
     new Setting(containerEl)
       .setName("Password")
-      .setDesc("Files are encrypted before upload. Leave blank to disable. Changing this makes existing remote files unreadable.")
+      .setDesc(
+        "Files are encrypted client-side before upload. " +
+        "Leave blank to disable. Changing this makes existing remote files unreadable."
+      )
       .addText((text) => {
         text
-          .setPlaceholder("leave blank to disable encryption")
+          .setPlaceholder("leave blank to disable")
           .setValue(this.plugin.settings.encryptionPassword)
-          .onChange(async (v) => { this.plugin.settings.encryptionPassword = v; await this.plugin.saveSettings(); });
+          .onChange(async (v) => {
+            this.plugin.settings.encryptionPassword = v;
+            await this.plugin.saveSettings();
+          });
         text.inputEl.type = "password";
         text.inputEl.id   = "sss-enc-password";
       })
@@ -325,33 +410,44 @@ export class SSSSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Method")
-      .setDesc("openssl-base64 encrypts content only. rclone-base64 also encrypts file names.")
+      .setDesc(
+        "OpenSSL encrypts file content only — folder and file names remain readable in R2. " +
+        "rclone also encrypts file names for maximum privacy."
+      )
       .addDropdown((dd) =>
         dd
-          .addOption("openssl-base64", "OpenSSL AES-CBC")
-          .addOption("rclone-base64",  "rclone Salsa20 (encrypts names too)")
+          .addOption("openssl-base64", "OpenSSL AES-CBC (content only)")
+          .addOption("rclone-base64",  "rclone Salsa20 (names + content)")
           .setValue(this.plugin.settings.encryptionMethod)
-          .onChange(async (v: any) => { this.plugin.settings.encryptionMethod = v; await this.plugin.saveSettings(); })
+          .onChange(async (v: any) => {
+            this.plugin.settings.encryptionMethod = v;
+            await this.plugin.saveSettings();
+          })
       );
 
-    // ── Sync ──────────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    // 3. SYNC BEHAVIOUR
+    // ═══════════════════════════════════════════════════════════════════
 
-    containerEl.createEl("h3", { text: "Sync" });
+    this._sectionHeading(containerEl, "Sync Behaviour");
 
     new Setting(containerEl)
       .setName("Direction")
       .addDropdown((dd) =>
         dd
           .addOption("bidirectional", "Bidirectional")
-          .addOption("push_only",     "Push only (local → remote)")
-          .addOption("pull_only",     "Pull only (remote → local)")
+          .addOption("push_only",     "Push only  (local → remote)")
+          .addOption("pull_only",     "Pull only  (remote → local)")
           .setValue(this.plugin.settings.syncDirection)
-          .onChange(async (v: any) => { this.plugin.settings.syncDirection = v; await this.plugin.saveSettings(); })
+          .onChange(async (v: any) => {
+            this.plugin.settings.syncDirection = v;
+            await this.plugin.saveSettings();
+          })
       );
 
     new Setting(containerEl)
       .setName("Conflict Resolution")
-      .setDesc("Applied when the same file changed on both sides. The losing version is saved as a .conflict backup.")
+      .setDesc("When the same file changed on both devices. The losing version is backed up as .conflict-YYYY-MM-DD.")
       .addDropdown((dd) =>
         dd
           .addOption("keep_newer",  "Keep newer")
@@ -359,7 +455,10 @@ export class SSSSettingTab extends PluginSettingTab {
           .addOption("keep_local",  "Always keep local")
           .addOption("keep_remote", "Always keep remote")
           .setValue(this.plugin.settings.conflictResolution)
-          .onChange(async (v: any) => { this.plugin.settings.conflictResolution = v; await this.plugin.saveSettings(); })
+          .onChange(async (v: any) => {
+            this.plugin.settings.conflictResolution = v;
+            await this.plugin.saveSettings();
+          })
       );
 
     new Setting(containerEl)
@@ -370,7 +469,10 @@ export class SSSSettingTab extends PluginSettingTab {
           .addOption("trash_local",  "Obsidian trash (.trash)")
           .addOption("permanent",    "Delete permanently")
           .setValue(this.plugin.settings.deleteBehaviour)
-          .onChange(async (v: any) => { this.plugin.settings.deleteBehaviour = v; await this.plugin.saveSettings(); })
+          .onChange(async (v: any) => {
+            this.plugin.settings.deleteBehaviour = v;
+            await this.plugin.saveSettings();
+          })
       );
 
     new Setting(containerEl)
@@ -388,7 +490,7 @@ export class SSSSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Ignore Paths")
-      .setDesc("Glob patterns, one per line. e.g. *.tmp  archive/  **/node_modules/**")
+      .setDesc("Glob patterns, one per line — e.g. *.tmp  archive/  **/node_modules/**")
       .addTextArea((area) => {
         area
           .setPlaceholder("*.tmp\narchive/")
@@ -398,25 +500,25 @@ export class SSSSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
         area.inputEl.rows = 5;
-        area.inputEl.style.width       = "100%";
-        area.inputEl.style.fontFamily  = "monospace";
+        area.inputEl.style.width      = "100%";
+        area.inputEl.style.fontFamily = "monospace";
       });
 
-    // ── Automation ────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    // 4. AUTOMATION
+    // ═══════════════════════════════════════════════════════════════════
 
-    containerEl.createEl("h3", { text: "Automation" });
+    this._sectionHeading(containerEl, "Automation");
 
-    // Notification note (always visible regardless of sync mode)
     const autoNote = containerEl.createDiv({ cls: "sss-inline-note sss-auto-note" });
     autoNote.createEl("strong", { text: "Non-intrusive by default. " });
     autoNote.appendText(
-      "Automatic sync triggers do not show pop-up toasts, " +
-      "keeping your writing session uninterrupted. " +
-      "On mobile, a small floating indicator shows sync state instead."
+      "Automatic sync runs silently in the background — no pop-up toasts, no interruptions. " +
+      "A small floating indicator on mobile shows sync state instead."
     );
 
     new Setting(containerEl)
-      .setName("Use toast notifications for auto-sync")
+      .setName("Show toast notifications for auto-sync")
       .setDesc("When on, all sync triggers show pop-up toasts and the floating mobile indicator is hidden.")
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.useToastForAutoSync).onChange(async (v) => {
@@ -427,16 +529,14 @@ export class SSSSettingTab extends PluginSettingTab {
         })
       );
 
-    // ── Smart Sync ───────────────────────────────────────────────────────────
-
-    const smartSyncNote = containerEl.createDiv({ cls: "sss-inline-note sss-auto-note" });
-    smartSyncNote.createEl("strong", { text: "Smart Sync — Recommended. " });
-    smartSyncNote.appendText(
-      "Watches for changes across all your devices automatically. " +
+    // Smart Sync ─────────────────────────────────────────────────────
+    const smartNote = containerEl.createDiv({ cls: "sss-inline-note sss-auto-note" });
+    smartNote.createEl("strong", { text: "Smart Sync — Recommended. " });
+    smartNote.appendText(
       "A few seconds after you stop writing, your vault syncs silently. " +
-      "Other open devices are notified via the cloud and pull the changes within seconds. " +
-      "When Obsidian reopens on any device, it checks for changes made while it was closed. " +
-      "Enabling Smart Sync disables the manual automation settings below."
+      "Other open devices are notified within seconds. " +
+      "On mobile, syncs when you reopen the app. " +
+      "Enabling Smart Sync disables the manual options below."
     );
 
     const smartEnabled = this.plugin.settings.smartSync;
@@ -450,21 +550,63 @@ export class SSSSettingTab extends PluginSettingTab {
         toggle.setValue(smartEnabled).onChange(async (v) => {
           this.plugin.settings.smartSync = v;
           await this.plugin.saveSettings();
-          this.display(); // re-render to show/hide relevant fields
+          this.display();
         })
       );
 
     if (smartEnabled) {
       new Setting(containerEl)
         .setName("Idle time before sync (seconds)")
-        .setDesc("Sync triggers this many seconds after you stop typing. Default: 7.")
+        .setDesc("How long to wait after you stop typing before syncing. Default: 4.")
         .addText((text) =>
           text
-            .setPlaceholder("7")
-            .setValue(String(this.plugin.settings.smartSyncIdleSeconds ?? 7))
+            .setPlaceholder("4")
+            .setValue(String(this.plugin.settings.smartSyncIdleSeconds ?? 4))
             .onChange(async (v) => {
               const n = parseInt(v, 10);
-              this.plugin.settings.smartSyncIdleSeconds = (n > 0 && n <= 300) ? n : 7;
+              this.plugin.settings.smartSyncIdleSeconds = (n > 0 && n <= 300) ? n : 4;
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName("Active poll interval (ms)")
+        .setDesc("How often to check for changes while you are actively editing. Default: 2000.")
+        .addText((text) =>
+          text
+            .setPlaceholder("2000")
+            .setValue(String(this.plugin.settings.activePollIntervalMs ?? 2000))
+            .onChange(async (v) => {
+              const n = parseInt(v, 10);
+              this.plugin.settings.activePollIntervalMs = (n >= 500 && n <= 30000) ? n : 2000;
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName("Idle poll interval (ms)")
+        .setDesc("How often to check for changes after 2 min of inactivity. Default: 30000.")
+        .addText((text) =>
+          text
+            .setPlaceholder("30000")
+            .setValue(String(this.plugin.settings.idlePollIntervalMs ?? 30000))
+            .onChange(async (v) => {
+              const n = parseInt(v, 10);
+              this.plugin.settings.idlePollIntervalMs = (n >= 5000 && n <= 300000) ? n : 30000;
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName("Post-sync re-poll delay (ms)")
+        .setDesc("Delay before checking the sentinel again after a sync completes. Default: 500.")
+        .addText((text) =>
+          text
+            .setPlaceholder("500")
+            .setValue(String(this.plugin.settings.postSyncRePollMs ?? 500))
+            .onChange(async (v) => {
+              const n = parseInt(v, 10);
+              this.plugin.settings.postSyncRePollMs = (n >= 100 && n <= 10000) ? n : 500;
               await this.plugin.saveSettings();
             })
         );
@@ -473,7 +615,7 @@ export class SSSSettingTab extends PluginSettingTab {
     if (!smartEnabled) {
       new Setting(containerEl)
         .setName("Sync on App Open")
-        .setDesc("Triggers a sync 5 seconds after Obsidian launches.")
+        .setDesc("Triggers a sync a few seconds after Obsidian launches.")
         .addToggle((toggle) =>
           toggle.setValue(this.plugin.settings.syncOnOpen).onChange(async (v) => {
             this.plugin.settings.syncOnOpen = v;
@@ -496,7 +638,7 @@ export class SSSSettingTab extends PluginSettingTab {
 
       new Setting(containerEl)
         .setName("Sync on Save Debounce (seconds)")
-        .setDesc("Triggers sync N seconds after a file is saved. 0 = disabled. Requires plugin reload if changed.")
+        .setDesc("Sync N seconds after a file is saved. 0 = disabled. Requires reload if changed.")
         .addText((text) => {
           const secs = this.plugin.settings.syncOnSaveDebounceMs > 0
             ? String(this.plugin.settings.syncOnSaveDebounceMs / 1000) : "0";
@@ -509,7 +651,7 @@ export class SSSSettingTab extends PluginSettingTab {
 
       new Setting(containerEl)
         .setName("Sync on Idle (seconds)")
-        .setDesc("Triggers sync N seconds after you stop typing. 0 = disabled. Requires plugin reload if changed.")
+        .setDesc("Sync N seconds after you stop typing. 0 = disabled. Requires reload if changed.")
         .addText((text) => {
           const secs = this.plugin.settings.syncOnIdleMs > 0
             ? String(this.plugin.settings.syncOnIdleMs / 1000) : "0";
@@ -521,34 +663,45 @@ export class SSSSettingTab extends PluginSettingTab {
         });
     }
 
-    // ── Advanced ──────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    // 5. ADVANCED
+    // ═══════════════════════════════════════════════════════════════════
 
-    containerEl.createEl("h3", { text: "Advanced" });
+    this._sectionHeading(containerEl, "Advanced");
 
     new Setting(containerEl)
       .setName("Use custom pairing relay")
-      .setDesc("By default, Pair Devices uses a free relay hosted by the plugin developer (open-source, end-to-end encrypted). Enable this only if you have deployed your own sss-relay instance.")
+      .setDesc(
+        "The default relay is free, open-source, and end-to-end encrypted. " +
+        "Enable this only if you have deployed your own sss-relay Worker."
+      )
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.useCustomRelay).onChange(async (v) => {
           this.plugin.settings.useCustomRelay = v;
           await this.plugin.saveSettings();
-          this.display(); // re-render to show/hide URL field
+          this.display();
         })
       );
 
     if (this.plugin.settings.useCustomRelay) {
       new Setting(containerEl)
         .setName("Custom Relay URL")
-        .setDesc("Your self-hosted sss-relay Worker URL. See github.com/xensenx/sss-relay for setup instructions.")
+        .setDesc("Your self-hosted sss-relay Worker URL.")
         .addText((text) =>
           text
             .setPlaceholder("https://sss-relay.yourname.workers.dev")
             .setValue(this.plugin.settings.customRelayUrl)
-            .onChange(async (v) => { this.plugin.settings.customRelayUrl = v.trim(); await this.plugin.saveSettings(); })
+            .onChange(async (v) => {
+              this.plugin.settings.customRelayUrl = v.trim();
+              await this.plugin.saveSettings();
+            })
         )
         .addButton((btn) =>
           btn.setButtonText("Test").onClick(async () => {
-            if (!this.plugin.settings.customRelayUrl) { new Notice("Enter a relay URL first."); return; }
+            if (!this.plugin.settings.customRelayUrl) {
+              new Notice("Enter a relay URL first.");
+              return;
+            }
             btn.setDisabled(true);
             btn.setButtonText("Testing…");
             const ok = await checkRelayHealth(this.plugin.settings.customRelayUrl);
@@ -568,11 +721,14 @@ export class SSSSettingTab extends PluginSettingTab {
           .addOption("info",  "Info (default)")
           .addOption("debug", "Debug (verbose)")
           .setValue(this.plugin.settings.logLevel)
-          .onChange(async (v: any) => { this.plugin.settings.logLevel = v; await this.plugin.saveSettings(); })
+          .onChange(async (v: any) => {
+            this.plugin.settings.logLevel = v;
+            await this.plugin.saveSettings();
+          })
       );
 
     new Setting(containerEl)
-      .setName("Sync .obsidian Config Directory")
+      .setName("Sync .obsidian config directory")
       .setDesc("Include Obsidian configuration files in the sync.")
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.syncConfigDir).onChange(async (v) => {
@@ -582,7 +738,7 @@ export class SSSSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Show Status Bar")
+      .setName("Show status bar")
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.showStatusBar).onChange(async (v) => {
           this.plugin.settings.showStatusBar = v;
@@ -590,23 +746,107 @@ export class SSSSettingTab extends PluginSettingTab {
         })
       );
 
-    // ── Danger Zone ───────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    // 6. DANGER ZONE
+    // ═══════════════════════════════════════════════════════════════════
 
-    containerEl.createEl("h3", { text: "Danger Zone" });
+    this._sectionHeading(containerEl, "Danger Zone", "sss-danger-heading");
 
     new Setting(containerEl)
       .setName("Reset Sync History")
-      .setDesc("Clears the record of what was last synced. The next sync will do a full comparison.")
+      .setDesc(
+        "Clears the local record of what was last synced. " +
+        "The next sync will do a full comparison against remote — no data is deleted."
+      )
       .addButton((btn) =>
         btn.setButtonText("Reset").setWarning().onClick(async () => {
           await (this.plugin as any).resetSyncHistory?.();
         })
       );
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 7. RESOURCES & SUPPORT
+    // ═══════════════════════════════════════════════════════════════════
+
+    this._sectionHeading(containerEl, "Resources & Support");
+
+    const resources = containerEl.createDiv({ cls: "sss-resources" });
+
+    this._resourceCard(resources, {
+      iconSvg:  GITHUB_SVG,
+      label:    "GitHub Repository",
+      desc:     "Source code, issues, and changelogs",
+      href:     "https://github.com/xensenx/Secure-Smart-Sync",
+    });
+
+    this._resourceCard(resources, {
+      iconSvg:  GLOBE_SVG,
+      label:    "Official Website",
+      desc:     "Visual setup guide and full documentation",
+      href:     "https://secure-smart-sync.pages.dev/",
+    });
+
+    this._resourceCard(resources, {
+      iconSvg:  KOFI_SVG,
+      label:    "Support on Ko-fi",
+      desc:     "Like the plugin? Buy me a coffee ☕",
+      href:     "https://ko-fi.com/xensenx",
+      accent:   true,
+    });
+
+    this._resourceCard(resources, {
+      iconSvg:  GITHUB_SVG,
+      label:    "Developer — @xensenx",
+      desc:     "Other projects and work",
+      href:     "https://github.com/xensenx",
+    });
+  }
+
+  // ─── Private helpers ───────────────────────────────────────────────────────
+
+  /** Renders a labelled section divider with optional extra CSS class. */
+  private _sectionHeading(container: HTMLElement, text: string, extraCls?: string): void {
+    const el = container.createEl("h3", { text, cls: "sss-section-heading" });
+    if (extraCls) el.addClass(extraCls);
+  }
+
+  /**
+   * Renders a clickable resource card that opens a URL in the system browser.
+   * Works on Obsidian mobile (WebView) and desktop (Electron).
+   */
+  private _resourceCard(
+    container: HTMLElement,
+    opts: { iconSvg: string; label: string; desc: string; href: string; accent?: boolean }
+  ): void {
+    const card = container.createEl("a", {
+      cls: `sss-resource-card${opts.accent ? " sss-resource-accent" : ""}`,
+    });
+    // Use href so the element is keyboard-accessible and renders as a link.
+    (card as HTMLAnchorElement).href   = opts.href;
+    (card as HTMLAnchorElement).target = "_blank";
+    (card as HTMLAnchorElement).rel    = "noopener noreferrer";
+
+    // Override default navigation so it opens in external browser on all platforms.
+    card.addEventListener("click", (e) => {
+      e.preventDefault();
+      openUrl(opts.href);
+    });
+
+    const left = card.createDiv({ cls: "sss-resource-left" });
+    const iconEl = left.createDiv({ cls: "sss-resource-icon" });
+    iconEl.innerHTML = opts.iconSvg;
+
+    const text = left.createDiv({ cls: "sss-resource-text" });
+    text.createEl("span", { text: opts.label, cls: "sss-resource-label" });
+    text.createEl("span", { text: opts.desc,  cls: "sss-resource-desc"  });
+
+    const arrow = card.createDiv({ cls: "sss-resource-arrow" });
+    arrow.innerHTML = EXTLINK_SVG;
   }
 
   private _setConnectionResult(msg: string, cls: string): void {
     if (!this.connectionResultEl) return;
     this.connectionResultEl.textContent = msg;
-    this.connectionResultEl.className = `sss-conn-result ${cls}`.trim();
+    this.connectionResultEl.className   = `sss-conn-result ${cls}`.trim();
   }
 }

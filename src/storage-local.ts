@@ -152,6 +152,15 @@ export class StorageLocal extends StorageBase {
   // ── rm ───────────────────────────────────────────────────────────────────────
 
   async rm(key: string): Promise<void> {
+    // Guard: if the file is already absent (deleted externally, race condition
+    // between the sync decision and execution), treat as success rather than
+    // throwing.  A file that is already gone is already in the desired state.
+    const exists = await this.vault.adapter.exists(key);
+    if (!exists) {
+      this.logger?.debug(`[SSS] rm: "${key}" already absent, skipping`);
+      return;
+    }
+
     if (this.deleteToWhere === "permanent") {
       await this.vault.adapter.remove(key);
     } else if (this.deleteToWhere === "system") {

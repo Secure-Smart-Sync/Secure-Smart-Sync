@@ -161,8 +161,24 @@ export interface PluginSettings {
    * Handles idle sync, cross-device notification, and on-open catch-up automatically.
    */
   smartSync: boolean;
-  /** Seconds of editor inactivity before Smart Sync fires. Default 7. */
+  /** Seconds of editor inactivity before Smart Sync fires. Default 4. */
   smartSyncIdleSeconds: number;
+  /**
+   * Sentinel poll interval (ms) while the user is actively editing.
+   * Shorter = faster cross-device detection. Default 2000 (2 s).
+   */
+  activePollIntervalMs: number;
+  /**
+   * Sentinel poll interval (ms) after 2 min of inactivity.
+   * Longer = fewer R2 Class B ops when nobody is writing. Default 30000 (30 s).
+   */
+  idlePollIntervalMs: number;
+  /**
+   * Delay (ms) before re-polling the sentinel after a sync completes.
+   * Lets the just-written sentinel propagate before the next read.
+   * Default 500 ms.
+   */
+  postSyncRePollMs: number;
 
   /** Max file size to sync in bytes. -1 = unlimited. */
   maxFileSizeBytes: number;
@@ -226,7 +242,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   syncOnIdleMs: -1,
   syncOnOpen: false,
   smartSync: false,
-  smartSyncIdleSeconds: 7,
+  smartSyncIdleSeconds: 4,
+  activePollIntervalMs: 2000,
+  idlePollIntervalMs: 30000,
+  postSyncRePollMs: 500,
 
   maxFileSizeBytes: -1,
   ignorePaths: [],

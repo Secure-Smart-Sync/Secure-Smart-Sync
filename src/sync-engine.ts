@@ -242,13 +242,15 @@ function decisionToTaskKind(d: SyncDecision): TaskKind {
 // ─── Conflict copy helpers ────────────────────────────────────────────────────
 
 export function conflictBackupKey(key: string): string {
-  const date = new Date().toISOString().slice(0, 10);
+  // Include HH-MM-SS so multiple conflicts on the same file in one day
+  // each get a unique backup path instead of silently overwriting each other.
+  const ts = new Date().toISOString().slice(0, 19).replace("T", "_").replace(/:/g, "-");
   const lastDot   = key.lastIndexOf(".");
   const lastSlash = key.lastIndexOf("/");
   if (lastDot > lastSlash && lastDot !== -1) {
-    return `${key.slice(0, lastDot)}.conflict-${date}${key.slice(lastDot)}`;
+    return `${key.slice(0, lastDot)}.conflict-${ts}${key.slice(lastDot)}`;
   }
-  return `${key}.conflict-${date}`;
+  return `${key}.conflict-${ts}`;
 }
 
 async function saveConflictBackup(
@@ -290,7 +292,7 @@ export interface ExecuteOptions {
 }
 
 export async function executeTasks(opts: ExecuteOptions): Promise<SyncStats> {
-  const { local, remote, tasks, concurrency = 5, logger, onProgress } = opts;
+  const { local, remote, tasks, concurrency = 8, logger, onProgress } = opts;
   const stats: SyncStats = {
     filesUploaded: 0, filesDownloaded: 0, filesDeleted: 0,
     filesSkipped: 0, conflictsResolved: 0, errors: [], startedAt: Date.now(),
@@ -313,7 +315,10 @@ export async function executeTasks(opts: ExecuteOptions): Promise<SyncStats> {
             logger?.warn(`[SSS] Retrying ${task.kind} ${task.key} (attempt ${attempt + 1})…`);
             await delay(RETRY_BASE_MS * Math.pow(2, attempt - 1));
           }
-          await executeTask(task, local, remote, stats, logger);
+          await executeTask(task, local, remote, logger);
+          // Increment stats exactly once, after confirmed success.
+          // Moving this out of executeTask prevents double-counting on retries.
+          recordTaskStats(task, stats);
           lastErr = undefined;
           break;
         } catch (err) {
@@ -337,11 +342,28 @@ export async function executeTasks(opts: ExecuteOptions): Promise<SyncStats> {
   return stats;
 }
 
+/** Update stats counters after a task has executed successfully. */
+function recordTaskStats(task: SyncTask, stats: SyncStats): void {
+  switch (task.kind) {
+    case "push":
+      if (task.decision.startsWith("conflict")) stats.conflictsResolved++;
+      else stats.filesUploaded++;
+      break;
+    case "pull":
+      if (task.decision.startsWith("conflict")) stats.conflictsResolved++;
+      else stats.filesDownloaded++;
+      break;
+    case "delete_remote":
+    case "delete_local":
+      stats.filesDeleted++;
+      break;
+  }
+}
+
 async function executeTask(
   task: SyncTask,
   local: StorageBase,
   remote: StorageBase,
-  stats: SyncStats,
   logger?: PluginLogger
 ): Promise<void> {
   const { key, kind, decision } = task;
@@ -351,28 +373,20 @@ async function executeTask(
     case "push":
       if (decision.startsWith("conflict")) {
         await saveConflictBackup(task, local, remote, logger);
-        stats.conflictsResolved++;
-      } else {
-        stats.filesUploaded++;
       }
       await copyFileOrFolder(key, local, remote);
       break;
     case "pull":
       if (decision.startsWith("conflict")) {
         await saveConflictBackup(task, local, remote, logger);
-        stats.conflictsResolved++;
-      } else {
-        stats.filesDownloaded++;
       }
       await copyFileOrFolder(key, remote, local);
       break;
     case "delete_remote":
       await remote.rm(key);
-      stats.filesDeleted++;
       break;
     case "delete_local":
       await local.rm(key);
-      stats.filesDeleted++;
       break;
     case "mkdir_remote":
       await remote.mkdir(key);

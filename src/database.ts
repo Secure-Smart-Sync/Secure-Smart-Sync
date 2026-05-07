@@ -178,7 +178,13 @@ export async function insertSyncHistoryEntry(
     vaultId,
     summary,
   } satisfies SyncHistoryEntry);
-  await pruneHistory(db, vaultId);
+  // Pruning is best-effort — a failure here must not surface as a
+  // history-write failure to the caller.
+  try {
+    await pruneHistory(db, vaultId);
+  } catch (err) {
+    console.warn("[SSS] Failed to prune sync history:", (err as Error).message);
+  }
 }
 
 export async function readSyncHistory(

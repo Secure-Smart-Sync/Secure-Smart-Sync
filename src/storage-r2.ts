@@ -571,6 +571,13 @@ export class StorageR2 extends StorageBase {
   // ── connectivity ─────────────────────────────────────────────────────────────
 
   async checkConnection(onError?: (err: unknown) => void): Promise<boolean> {
+    // Fail fast before the SDK tries to resolve an empty/malformed URL, which
+    // can hang for the full request-timeout instead of rejecting immediately.
+    if (!this.cfg.endpoint || !this.cfg.bucketName || !this.cfg.accessKeyId) {
+      const err = new Error("R2 endpoint, bucket name, and access key are required.");
+      onError?.(err);
+      return false;
+    }
     try {
       const rsp = await this.client.send(
         new ListObjectsV2Command({
