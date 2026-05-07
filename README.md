@@ -28,11 +28,11 @@
 
 ---
 
-**[Visit the Official SSS Website](https://secure-smart-sync.pages.dev/)** for the absolute best setup experience, complete with visual animations and detailed step-by-step instructions along side other details.
+**[Visit the Official SSS Website](https://secure-smart-sync.pages.dev/)** for the absolute best setup experience, complete with visual animations and detailed step-by-step instructions alongside other details.
 
 ---
 
-## Whats is this?
+## What is this?
 
 Secure-Smart-Sync (SSS) syncs your Obsidian vault to a Cloudflare R2 bucket you own. Every file is encrypted on your device before upload using AES-256, so the storage provider — and anyone who might access your bucket — sees only opaque ciphertext. Sync is bidirectional with a three-way diff engine that handles conflicts, deletions, and renames cleanly.
 
