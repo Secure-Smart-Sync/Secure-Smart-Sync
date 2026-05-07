@@ -159,6 +159,9 @@ The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and 
     <img src="assets/Ko-fi_black.svg" alt="Support me on Ko-fi" width="120">
   </picture>
 </a>
+
+<strong>If the plugin has been useful to you, considering supporting the further development of the software</strong>
+
 </div>
 
 
