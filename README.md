@@ -17,9 +17,9 @@
   <a href="https://obsidian.md/sync">Obsidian Sync</a>
 </p>
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Read the [Usage Guidelines](./Usage_Guidelines.md) before setup for optimal results.
-> <br>
-> **Recommended:** For the best setup experience, featuring visual animations and detailed step-by-step guides, visit our official website: **[secure-smart-sync.pages.dev](https://secure-smart-sync.pages.dev/)**
+<picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Read the [Usage Guidelines](./Usage_Guidelines.md) before setup for optimal results.
+<br>
+**Recommended:** For the best setup experience, featuring visual animations and detailed step-by-step guides, visit our official website: **[secure-smart-sync.pages.dev](https://secure-smart-sync.pages.dev/)**
 
 ---
 
