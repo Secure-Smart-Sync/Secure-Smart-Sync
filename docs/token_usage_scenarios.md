@@ -209,6 +209,34 @@ This is where users may begin approaching paid limits.
 
 ---
 
+# What Happens If You Exceed Free Tier?
+
+This section only applies to a small minority of edge-case users.
+
+Most users will never reach this point.
+
+Cloudflare R2 uses monthly billing for usage beyond the free tier.
+
+## Standard Storage Pricing
+
+- **Storage:** $0.015 per GB/month
+- **Class A Operations:** $4.50 per million operations
+- **Class B Operations:** $0.36 per million operations
+- **Data Retrieval:** Free
+- **Egress Bandwidth:** Free
+
+## Infrequent Access Pricing
+
+- **Storage:** $0.01 per GB/month
+- **Class A Operations:** $9.00 per million operations
+- **Class B Operations:** $0.90 per million operations
+- **Data Retrieval:** $0.01 per GB
+- **Egress Bandwidth:** Free
+
+Even for users who exceed the free tier, costs typically remain very low compared to traditional subscription-based sync services.
+
+---
+
 # When Should You Use the Token Calculator?
 
 Use the calculator on the official website if:
