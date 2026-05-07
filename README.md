@@ -154,10 +154,10 @@ The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and 
   <picture>
     <!-- If the theme is dark, use the white logo -->
     <source srcset="assets/Ko-fi_white.svg" media="(prefers-color-scheme: dark)">
+<strong>If SSS is useful to you, consider supporting its development.</strong>
     <!-- Default/Light theme uses the black logo -->
     <img src="assets/Ko-fi_black.svg" alt="Support me on Ko-fi" width="120">
   </picture>
 </a>
 
-<strong>If SSS is useful to you, consider supporting its development.</strong>
 
