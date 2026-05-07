@@ -26,6 +26,8 @@
   <img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center">
 </picture>   <b>Notice:</b> Read the <a href="./Usage_Guidelines.md">Usage Guidelines</a> before setup for optimal results.
 
+---
+
 **[Visit the Official SSS Website](https://secure-smart-sync.pages.dev/)** for the absolute best setup experience, complete with visual animations and detailed step-by-step instructions along with other details.
 
 ## What it does
