@@ -213,3 +213,10 @@ The Advanced section provides additional controls for power users and troublesho
 * **Reset Sync History:** Clears the local database record of what was last synced. The plugin uses an internal database to track file states (like ETags and modification times) to optimize differential syncing. Clicking "Reset" wipes this memory, forcing the engine to perform a full, deep comparison of all local and remote files on the next run.
 
 > <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Resetting the sync history does not delete any of your actual markdown files or remote data. It only deletes the plugin's tracking memory. Use this feature to force a clean slate if you suspect your sync state has become confused or corrupted.
+
+## 15. Documentation & Additional Resources
+
+If you have any further questions or want to dive deeper into how the plugin works, you have two great resources available:
+
+* **The Official Website (Recommended):** For the absolute best setup experience, please visit our official website at **[secure-smart-sync.pages.dev](https://secure-smart-sync.pages.dev/)**. There you will find this complete setup guide enhanced with visual animations, detailed step-by-step instructions, and plenty of other helpful resources to get the most out of Secure-Smart-Sync.
+* **The Docs Folder:** For highly technical information, precise configurations, or deep dives into the plugin's architecture, please check out the `docs` directory right here in the GitHub repository. You can find answers to almost everything regarding the inner workings of the sync engine there.
