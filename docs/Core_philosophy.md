@@ -80,7 +80,7 @@ Secure Smart Sync is built with the expectation that these scenarios will happen
 This is why significant effort has gone into:
 
 - conflict handling
-n- duplicate protection
+- duplicate protection
 - deletion safeguards
 - sync state awareness
 - recovery systems
