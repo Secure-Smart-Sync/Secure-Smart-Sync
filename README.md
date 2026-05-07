@@ -153,6 +153,7 @@ Code is released under the **MIT License** — see [LICENSE](./LICENSE).
 
 The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and are not covered by the MIT License. The code is free to use and modify; the visual identity and project name are not available for redistribution or rebranding.
 
+## Support
 
 <div align="center">
 <a href="https://ko-fi.com/xensenx" style="display: inline-block; vertical-align: middle;">
