@@ -176,3 +176,25 @@ If you turn Smart Sync **Off**, you can individually configure the following tri
 > <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Manual configuration does not feature the full, real-time cross-device awareness that Smart Sync provides. Unless you configure an "Auto-Sync Interval", your other devices will not automatically know if this device has synced. 
 
 While manual configuration can provide a highly stable system if configured correctly, it requires careful tuning. For more information on exact recommended manual configurations, please refer to the `docs` folder in the repository.
+
+## 12. Device-Specific Status Indication
+
+Because Secure-Smart-Sync is a platform-independent plugin, and the user interface differs significantly between desktop and mobile versions of Obsidian, we designed custom status indicators tailored to each environment. 
+
+To keep your writing experience perfectly uninterrupted, **standard pop-up toasts will only appear when you manually trigger a sync**. All automatic syncs happen silently in the background using visual colour cues instead.
+
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** You can force the plugin to always use pop-ups by turning on **"Use toast notifications for auto-sync"** in the Automation settings. However, this is not recommended as it becomes very intrusive during active writing sessions.
+
+### The Mobile Experience
+On mobile, Obsidian hides the ribbon menu inside a drawer and lacks a persistent bottom status bar. To solve this, SSS adds a small, aesthetic custom icon directly to the main dashboard (sitting comfortably next to the sidebar toggle button) designed to feel completely native.
+
+This floating indicator uses colour states to communicate:
+* **Idle (Gray):** The sync engine is resting. Tapping the icon in this state will trigger a manual sync.
+* **In Progress (Blue/Purple):** A sync is currently running. If you tap the icon during this state, it will expand into a small message box showing you the exact file progress.
+* **Success (Green):** The sync completed successfully. Tapping it will show the success summary.
+* **Error (Red):** The sync encountered an issue (e.g., network failure). Tapping it will display the specific error message so you know what went wrong.
+
+### The Desktop (PC) Experience
+On desktop, we avoid adding unnecessary UI elements by embedding these exact same colour indicators directly into the existing Obsidian interface:
+* **Ribbon Icon:** The SSS logo in your left-hand ribbon will dynamically change colour (Blue for syncing, Green for success, Red for error, Orange for conflicts) without interrupting your workflow.
+* **Status Bar:** The bottom-right status bar provides continuous, live text updates (e.g., "Syncing 5 / 100...") so you can always glance down to see exactly what the engine is doing.
