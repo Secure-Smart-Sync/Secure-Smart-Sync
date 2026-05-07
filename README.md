@@ -150,7 +150,7 @@ The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and 
 
 ## Support
 
-<center>
+<div align="center">
 <a href="https://ko-fi.com/xensenx" style="display: inline-block; vertical-align: middle;">
   <picture>
     <!-- If the theme is dark, use the white logo -->
@@ -159,6 +159,6 @@ The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and 
     <img src="assets/Ko-fi_black.svg" alt="Support me on Ko-fi" width="120">
   </picture>
 </a>
-</center>
+</div>
 
 
