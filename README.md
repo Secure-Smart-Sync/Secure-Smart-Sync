@@ -24,7 +24,9 @@
   <source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg">
   <source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg">
   <img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center">
-</picture>   <b>IMPORTANT:</b> Read the <a href="./Usage_Guidelines.md">Usage Guidelines</a> before setup for optimal results.
+</picture>   <b>Notice:</b> Read the <a href="./Usage_Guidelines.md">Usage Guidelines</a> before setup for optimal results.
+
+[![Website](https://img.shields.io/badge/Website-secure--smart--sync.pages.dev-blue)](https://secure-smart-sync.pages.dev/)
 
 ## What it does
 
