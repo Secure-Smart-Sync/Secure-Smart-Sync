@@ -21,7 +21,8 @@
 <br>
 
 ---
-**Recommended:** For the best setup experience, featuring visual animations and detailed step-by-step guides, visit our official website: **[secure-smart-sync](https://secure-smart-sync.pages.dev/)**
+
+**Visit our official site:** **[secure-smart-sync](https://secure-smart-sync.pages.dev/)**
 
 ---
 
