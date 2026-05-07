@@ -22,13 +22,10 @@
 
 </div>
 
----
-
 **Not affiliated with [Obsidian Sync](https://obsidian.md/sync).** SSS runs entirely on your own Cloudflare R2 bucket. You own the storage, the keys, and the data.
 
 Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[official site](https://secure-smart-sync.pages.dev/)** has a visual walkthrough that takes under five minutes.
 
----
 
 ## How it works
 
@@ -105,7 +102,6 @@ Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[offi
 
 <br>
 
----
 
 ## Get started
 
@@ -121,7 +117,6 @@ Install Secure-Smart-Sync from the Obsidian Community Plugins browser, or downlo
 
 Open the SSS settings tab, expand **Configure Connection**, enter your R2 endpoint and credentials, and run a connection test. Enable **Smart Sync** and you are done. Pair additional devices in under thirty seconds using the built-in pairing code.
 
----
 
 ## Documentation
 
@@ -132,7 +127,6 @@ Open the SSS settings tab, expand **Configure Connection**, enter your R2 endpoi
 | [R2 Usage & Limits](./docs/Token_usage_scenarios.md) | Free-tier op analysis across vault sizes and device counts |
 | [Contributing](./CONTRIBUTING.md) | Bug reports, pull requests, and documentation |
 
----
 
 ## Security
 
@@ -142,13 +136,11 @@ Full cryptographic detail is in [SECURITY.md](./SECURITY.md).
 
 The relay source is at [xensenx/Secure-Smart-Sync-relay](https://github.com/xensenx/Secure-Smart-Sync-relay). You can self-host it if you prefer not to use the default instance.
 
----
 
 ## Credits
 
 [Remotely Save](https://github.com/remotely-save/remotely-save) provided an early reference for S3-compatible storage that helped accelerate the initial prototyping phase. SSS has since been independently rewritten into a different architecture. The portions of Remotely Save that informed this project are licensed under Apache 2.0.
 
----
 
 ## License
 
@@ -156,7 +148,6 @@ Code is released under the **MIT License** — see [LICENSE](./LICENSE).
 
 The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and are not covered by the MIT License. The code is free to use and modify; the visual identity and project name are not available for redistribution or rebranding.
 
----
 
 <div align="center">
 
