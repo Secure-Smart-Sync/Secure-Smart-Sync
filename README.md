@@ -97,10 +97,20 @@ Remotely Save’s open-source components are licensed under the Apache License 2
 
 ## License & Branding
 
+
+
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **Trademark & Branding Notice**
+
+
+> [!IMPORTANT]
+
+> **Trademark & Branding Notice**
+
 >
+
 > The **Secure-Smart-Sync** name, logo, and associated branding assets are copyright © **Sen** and are **not** covered by the MIT License. 
+
 >
+
 > While you are free to use, modify, and distribute the software code under the terms of the MIT License, this does not grant permission to use the project's name, logo, or trademarks in a way that suggests endorsement or original authorship. All rights regarding the visual identity and naming of this project are reserved.
