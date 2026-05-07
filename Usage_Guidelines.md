@@ -201,15 +201,28 @@ On desktop, we avoid adding unnecessary UI elements by embedding these exact sam
 
 ## 13. Advanced Settings
 
-[cite_start]The Advanced section provides additional controls for power users and troubleshooting[cite: 1414, 1421].
+The Advanced section provides additional controls for power users and troubleshooting.
 
-* [cite_start]**Use custom pairing relay:** By default, the "Pair Devices" feature uses a free relay hosted by the plugin developer, which is open-source and end-to-end encrypted[cite: 1415]. [cite_start]If you have deployed your own `sss-relay` instance on Cloudflare Workers, you can enable this and enter your custom URL[cite: 1415, 1417].
-* **Log Level:** Controls how much diagnostic information the plugin writes to the Obsidian Developer Console. [cite_start]Options include Error only, Warn, Info (default), and Debug (verbose)[cite: 1421]. Switch this to "Debug" if you need to troubleshoot a sync issue.
-* [cite_start]**Sync .obsidian Config Directory:** Toggle this on to include Obsidian configuration files in the sync[cite: 1423]. This allows you to synchronize your active themes, CSS snippets, and other plugin settings across your devices.
-* [cite_start]**Show Status Bar:** Toggles the visibility of the live text updates (e.g., "Syncing...") in Obsidian's bottom-right status bar[cite: 1424].
+* **Use custom pairing relay:** By default, the "Pair Devices" feature uses a free relay hosted by the plugin developer (which is open-source and end-to-end encrypted). Enable this only if you have deployed your own custom `sss-relay` instance and need to enter your own URL.
+* **Log Level:** Controls how much diagnostic information the plugin writes to the Obsidian Developer Console. Options are Error only, Warn, Info (default), and Debug (verbose). Switch this to "Debug" if you are actively troubleshooting a sync issue.
+* **Sync .obsidian Config Directory:** Toggle this on to include Obsidian configuration files in the sync. This allows you to synchronize your active themes, CSS snippets, and other plugin settings alongside your notes.
+* **Show Status Bar:** Toggles the visibility of the live text updates (e.g., "Syncing...") in Obsidian's bottom-right status bar.
 
 ## 14. Danger Zone
 
-**Reset Sync History:** This clears the local database record of what was last synced[cite:. Secure-Smart-Sync uses this internal database to track file states (like ETags and modification times) to optimize differential syncing. Clicking "Reset" wipes this memory. The next time you trigger a sync, the engine will be forced to perform a full, deep comparison of all local and remote files. 
+* **Reset Sync History:** Clears the local database record of what was last synced. The plugin uses an internal database to track file states (like ETags and modification times) to optimize differential syncing. Clicking "Reset" wipes this memory, forcing the engine to perform a full, deep comparison of all local and remote files on the next run.
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Resetting the sync history does not delete any of your actual markdown files or remote data. It only deletes the plugin's tracking memory. Use this feature to force a clean slate if you suspect your sync state has become confused or corrupted.
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Resetting the sync history does not delete any of your actual markdown files or remote data. It only deletes the plugin's tracking memory. Use this feature to force a clean slate if you suspect your sync state has become confused or corrupted.
+
+The Advanced section provides additional controls for power users and troubleshooting.
+
+* **Use custom pairing relay:** By default, the "Pair Devices" feature uses a free relay hosted by the plugin developer (which is open-source and end-to-end encrypted). Enable this only if you have deployed your own custom `sss-relay` instance and need to enter your own URL.
+* **Log Level:** Controls how much diagnostic information the plugin writes to the Obsidian Developer Console. Options are Error only, Warn, Info (default), and Debug (verbose). Switch this to "Debug" if you are actively troubleshooting a sync issue.
+* **Sync .obsidian Config Directory:** Toggle this on to include Obsidian configuration files in the sync. This allows you to synchronize your active themes, CSS snippets, and other plugin settings alongside your notes.
+* **Show Status Bar:** Toggles the visibility of the live text updates (e.g., "Syncing...") in Obsidian's bottom-right status bar.
+
+## 14. Danger Zone
+
+* **Reset Sync History:** Clears the local database record of what was last synced. The plugin uses an internal database to track file states (like ETags and modification times) to optimize differential syncing. Clicking "Reset" wipes this memory, forcing the engine to perform a full, deep comparison of all local and remote files on the next run.
+
+> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Resetting the sync history does not delete any of your actual markdown files or remote data. It only deletes the plugin's tracking memory. Use this feature to force a clean slate if you suspect your sync state has become confused or corrupted.e confused or corrupted.
