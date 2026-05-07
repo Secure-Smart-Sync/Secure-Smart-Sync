@@ -54,6 +54,7 @@ Built to be a "set-and-forget" solution, Smart Sync watches your writing activit
 Typing long API keys, bucket names, and encryption passwords on a mobile phone is frustrating. SSS solves this with a secure, ephemeral relay system. 
 * Click "Generate Code" on your desktop to bundle your credentials into an **AES-GCM encrypted payload** and send it to our open-source Cloudflare Worker.
 * Enter the short code on your phone to instantly pull and decrypt the configuration. The decryption PIN never leaves your devices, and the payload self-destructs after 10 minutes.
+* visit the open source repository to set up your own pairing instance [here.](https://github.com/xensenx/Secure-Smart-Sync-relay)
 
 ## Getting Started
 
