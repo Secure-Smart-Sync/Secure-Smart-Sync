@@ -160,7 +160,6 @@ The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and 
 
 <div align="center">
 
-If SSS is useful to you, consider supporting its development.
 
 <br>
 
@@ -172,3 +171,8 @@ If SSS is useful to you, consider supporting its development.
     <img src="assets/Ko-fi_black.svg" alt="Support me on Ko-fi" width="120">
   </picture>
 </a>
+<br>
+<center>
+<strong>If SSS is useful to you, consider supporting its development.</strong>
+<center/>
+
