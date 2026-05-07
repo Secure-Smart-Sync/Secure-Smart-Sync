@@ -28,7 +28,9 @@
 
 ---
 
-**[Visit the Official SSS Website](https://secure-smart-sync.pages.dev/)** for the absolute best setup experience, complete with visual animations and detailed step-by-step instructions along with other details.
+**[Visit the Official SSS Website](https://secure-smart-sync.pages.dev/)** for the absolute best setup experience, complete with visual animations and detailed step-by-step instructions along side other details.
+
+---
 
 ## What it does
 
