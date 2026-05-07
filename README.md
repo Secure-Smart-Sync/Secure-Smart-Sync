@@ -164,19 +164,11 @@ If SSS is useful to you, consider supporting its development.
 
 <br>
 
-<a href="https://ko-fi.com/xensenx">
-  <img src="assets/Ko-fi_white.svg" alt="Alt Text" width="200">
+<a href="https://ko-fi.com/xensenx" style="display: inline-block; vertical-align: middle;">
+  <picture>
+    <!-- If the theme is dark, use the white logo -->
+    <source srcset="assets/Ko-fi_white.svg" media="(prefers-color-scheme: dark)">
+    <!-- Default/Light theme uses the black logo -->
+    <img src="assets/Ko-fi_black.svg" alt="Support me on Ko-fi" width="120">
+  </picture>
 </a>
-
-
-<br><br>
-
-<sub>
-  <a href="https://github.com/xensenx/Secure-Smart-Sync">GitHub</a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://secure-smart-sync.pages.dev/">Website</a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://github.com/xensenx">@xensenx</a>
-</sub>
-
-</div>
