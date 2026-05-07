@@ -47,6 +47,7 @@ Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[offi
 <sub>Every file is encrypted on your device before it is uploaded. You choose between AES-256-CBC (OpenSSL) or Salsa20+Poly1305 (rclone-compatible). Your password never leaves your device — the storage provider sees only ciphertext.</sub>
 
 </td>
+
 <td width="50%" valign="top" align="center">
 
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
