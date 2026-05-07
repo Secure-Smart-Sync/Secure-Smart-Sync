@@ -84,7 +84,7 @@ If you find this plugin helpful in keeping your vault secure, there are a few wa
   </a>
 </p>
 
-For more details on how to contribute code, submit pull requests, or help with documentation, please see **[CONTRIBUTIONS.md](./CONTRIBUTIONS.md)**.
+For more details on how to contribute code, submit pull requests, or help with documentation, please see **[CONTRIBUTING](./CONTRIBUTING.md)**.
 
 ## Credits & Acknowledgements
 
