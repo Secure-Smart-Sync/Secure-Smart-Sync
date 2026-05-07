@@ -158,11 +158,16 @@ Regardless of which automation method you choose, you can always trigger a sync 
 ### Method A: Smart Sync (Recommended)
 This is the default and highly recommended way to run the plugin. It is designed to be a "set-and-forget", highly reliable, long-term solution with dynamic conflict resolution baked in.
 
-If you toggle **Smart Sync** to **On**, all manual automation options are disabled. 
+If you toggle **Smart Sync** to **On**, all manual automation options are disabled. While Smart Sync works perfectly out-of-the-box, it now exposes fine-grained timing controls so you can dictate exactly how much network activity occurs.
 
-*   **How it works:** Smart Sync watches your activity. When you stop typing, it waits a short period before silently pushing your changes to the cloud. 
-*   **Idle time before sync:** The only parameter you need to set. This dictates how many seconds the engine waits after you stop typing before it syncs. The default of `7` seconds is highly recommended.
-*   **Cross-Device Awareness:** Smart Sync automatically handles catching up when you first open the Obsidian app. Furthermore, when Device A finishes a sync, it relays a state change via the cloud. Device B (if open) will detect this and automatically pull the changes exactly 4 seconds later (or very shortly after).
+* **How it works:** Smart Sync watches your activity. When you stop typing, it waits a short period before silently pushing your changes to the cloud. It also automatically handles catching up when you first open the Obsidian app on any device.
+* **Cross-Device Awareness:** When Device A finishes a sync, it relays a state change via the cloud. Device B (if open) actively polls for this state and will automatically pull the changes down within seconds.
+
+**Smart Sync Timing Controls:**
+* **Idle time before sync (seconds):** How long to wait after you stop typing before triggering a sync. Lower values mean faster syncs after you stop writing, while higher values mean fewer syncs during rapid editing sessions. Default: `4`.
+* **Active poll interval (ms):** How frequently the plugin checks the cloud for changes from other devices while you are actively editing. Lower values provide near-instant cross-device detection, while higher values conserve Cloudflare R2 Class B (read) operations. Default: `2000`.
+* **Idle poll interval (ms):** How frequently to check for cloud changes after 2 minutes of local inactivity. This is kept high by default to save network requests when you aren't actively working. Default: `30000`.
+* **Post-sync re-poll delay (ms):** How long to wait before checking the state sentinel immediately after a sync completes. This allows the newly written state to settle across Cloudflare's network before the next read. Default: `500`.
 
 ### Method B: Manual Configuration
 This method is for power users who need exact, granular control over when network requests are made. 
