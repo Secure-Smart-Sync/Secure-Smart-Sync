@@ -198,3 +198,18 @@ This floating indicator uses colour states to communicate:
 On desktop, we avoid adding unnecessary UI elements by embedding these exact same colour indicators directly into the existing Obsidian interface:
 * **Ribbon Icon:** The SSS logo in your left-hand ribbon will dynamically change colour (Blue for syncing, Green for success, Red for error, Orange for conflicts) without interrupting your workflow.
 * **Status Bar:** The bottom-right status bar provides continuous, live text updates (e.g., "Syncing 5 / 100...") so you can always glance down to see exactly what the engine is doing.
+
+## 13. Advanced Settings
+
+[cite_start]The Advanced section provides additional controls for power users and troubleshooting[cite: 1414, 1421].
+
+* [cite_start]**Use custom pairing relay:** By default, the "Pair Devices" feature uses a free relay hosted by the plugin developer, which is open-source and end-to-end encrypted[cite: 1415]. [cite_start]If you have deployed your own `sss-relay` instance on Cloudflare Workers, you can enable this and enter your custom URL[cite: 1415, 1417].
+* **Log Level:** Controls how much diagnostic information the plugin writes to the Obsidian Developer Console. [cite_start]Options include Error only, Warn, Info (default), and Debug (verbose)[cite: 1421]. Switch this to "Debug" if you need to troubleshoot a sync issue.
+* [cite_start]**Sync .obsidian Config Directory:** Toggle this on to include Obsidian configuration files in the sync[cite: 1423]. This allows you to synchronize your active themes, CSS snippets, and other plugin settings across your devices.
+* [cite_start]**Show Status Bar:** Toggles the visibility of the live text updates (e.g., "Syncing...") in Obsidian's bottom-right status bar[cite: 1424].
+
+## 14. Danger Zone
+
+* [cite_start]**Reset Sync History:** This clears the local database record of what was last synced[cite: 1425]. [cite_start]Secure-Smart-Sync uses this internal database to track file states (like ETags and modification times) to optimize differential syncing[cite: 937, 1127]. [cite_start]Clicking "Reset" wipes this memory[cite: 957]. [cite_start]The next time you trigger a sync, the engine will be forced to perform a full, deep comparison of all local and remote files[cite: 1127, 1425]. 
+
+> [cite_start]<picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Resetting the sync history does not delete any of your actual markdown files or remote data[cite: 957, 1425]. It only deletes the plugin's tracking memory. Use this feature to force a clean slate if you suspect your sync state has become confused or corrupted.
