@@ -1,113 +1,181 @@
-# Secure-Smart-Sync
-
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="assets/icon_black_transparent.svg">
-    <source media="(prefers-color-scheme: dark)" srcset="assets/icon_white_transparent.svg">
-    <img src="assets/icon_white_transparent.svg" width="200" alt="icon">
+    <source media="(prefers-color-scheme: dark)"  srcset="assets/icon_white_transparent.svg">
+    <img src="assets/icon_white_transparent.svg" width="96" alt="Secure-Smart-Sync">
   </picture>
+
+  <h2>Secure-Smart-Sync</h2>
+
+  <p>Privacy-first Obsidian vault sync via Cloudflare R2 with client-side encryption.<br>
+  Your files never leave your device unencrypted. No third-party servers. No subscriptions.</p>
+
+  <p>
+    <a href="https://secure-smart-sync.pages.dev/">Website</a>
+    &nbsp;&middot;&nbsp;
+    <a href="./Usage_Guidelines.md">Setup guide</a>
+    &nbsp;&middot;&nbsp;
+    <a href="./SECURITY.md">Security</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://ko-fi.com/xensenx">Support the project</a>
+  </p>
+
 </div>
 
-<p align="center">
-  <strong>Privacy-first Obsidian vault sync via Cloudflare R2 with client-side encryption.</strong><br>
-  Your files never leave your device unencrypted. No third-party servers. No subscriptions.
-</p>
-<p align="center">
-  <b>NOTE</b>: This is not the official Sync from 
-  <a href="https://obsidian.md/sync">Obsidian Sync</a>
-</p>
+---
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Read the [Usage Guidelines](./Usage_Guidelines.md) before setup for optimal results.
+> **Not affiliated with [Obsidian Sync](https://obsidian.md/sync).** SSS runs entirely on your own Cloudflare R2 bucket. You own the storage, the keys, and the data.
+
+Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[official site](https://secure-smart-sync.pages.dev/)** has a visual walkthrough that takes under five minutes.
+
+---
+
+## How it works
+
+<br>
+
+<table>
+<tr>
+<td width="50%" valign="top" align="center">
+
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="11" width="18" height="11" rx="2"/>
+  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+</svg>
+
+<br>
+
+**Zero-Knowledge Encryption**
+
+<sub>Every file is encrypted on your device before it is uploaded. You choose between AES-256-CBC (OpenSSL) or Salsa20+Poly1305 (rclone-compatible). Your password never leaves your device — the storage provider sees only ciphertext.</sub>
+
+</td>
+<td width="50%" valign="top" align="center">
+
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="18" cy="18" r="3"/>
+  <circle cx="6"  cy="6"  r="3"/>
+  <circle cx="6"  cy="18" r="3"/>
+  <path d="M18 15V9a6 6 0 0 0-6-6H9"/>
+  <path d="M9 21h3a6 6 0 0 0 6-6"/>
+</svg>
+
+<br>
+
+**Three-Way Diff Engine**
+
+<sub>Compares your local state, the remote state, and the last known sync snapshot. ETags anchor change detection so unchanged files are never re-uploaded. Conflicts are resolved by your rules and backed up automatically.</sub>
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center">
+
+<br>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+</svg>
+
+<br>
+
+**Smart Sync**
+
+<sub>A few seconds after you stop typing, your vault syncs silently in the background. When Device A finishes, it signals Device B, which pulls the changes within seconds. No manual triggering. No distracting pop-ups.</sub>
+
+</td>
+<td width="50%" valign="top" align="center">
+
+<br>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+</svg>
+
+<br>
+
+**Instant Device Pairing**
+
+<sub>Generate a short pairing code on one device. Enter it on another. Your R2 credentials and encryption settings transfer over an AES-GCM encrypted relay and self-destruct after ten minutes. No typing API keys on mobile.</sub>
+
+</td>
+</tr>
+</table>
+
 <br>
 
 ---
 
-**Visit our official site:** **[secure-smart-sync](https://secure-smart-sync.pages.dev/)**
+## Get started
+
+**1. Create your R2 bucket**
+
+Log in to Cloudflare, create an R2 bucket, and generate an API token with read and write permissions. The [visual setup guide](https://secure-smart-sync.pages.dev/) walks through every step.
+
+**2. Install the plugin**
+
+Install Secure-Smart-Sync from the Obsidian Community Plugins browser, or download the [latest release](https://github.com/xensenx/Secure-Smart-Sync/releases) and copy it to your vault's `.obsidian/plugins/` folder.
+
+**3. Configure and sync**
+
+Open the SSS settings tab, expand **Configure Connection**, enter your R2 endpoint and credentials, and run a connection test. Enable **Smart Sync** and you are done. Pair additional devices in under thirty seconds using the built-in pairing code.
 
 ---
 
-## Overview
+## Documentation
 
-Secure-Smart-Sync (SSS) is a local-first synchronization engine designed to securely mirror your Obsidian vault across multiple devices using your own Cloudflare R2 storage. 
+| | |
+|---|---|
+| [Usage Guidelines](./Usage_Guidelines.md) | Initial setup, configuration reference, and day-to-day usage |
+| [Security](./SECURITY.md) | Cryptographic methods, architecture, and threat model |
+| [R2 Usage & Limits](./docs/Token_usage_scenarios.md) | Free-tier op analysis across vault sizes and device counts |
+| [Contributing](./CONTRIBUTING.md) | Bug reports, pull requests, and documentation |
 
-Unlike traditional cloud providers, SSS encrypts every single file directly on your device *before* it is uploaded. The storage provider — and anyone who might access your bucket — sees only opaque ciphertext. Paired with a robust three-way differential sync engine and automated state-awareness, SSS delivers a seamless, native-feeling sync experience without compromising your privacy.
-
-## Core Mechanics
-
-### 1. Client-Side Encryption (Zero-Knowledge)
-Security is handled entirely on your local machine. You can choose between two robust encryption standards:
-* **OpenSSL AES-CBC (`openssl-base64`):** File contents are encrypted with AES-256-CBC, and file names are obfuscated using base64url encoding. 
-* **rclone Salsa20 (`rclone-base64`):** Compatible with rclone's crypt remote, utilizing Salsa20+Poly1305. 
-
-Because passwords never leave your device, your remote data is mathematically inaccessible to anyone without your local decryption key.
-
-### 2. The Three-Way Sync Engine
-To prevent data loss and unnecessary network requests, SSS relies on a highly optimized differential engine. It compares your **local state**, the **remote state**, and a **snapshot of the last known sync** to make intelligent decisions. 
-* **ETag-Anchored Detection:** It checks S3 content hashes (ETags) before falling back to file sizes and modification times, ensuring unchanged files are never pointlessly re-uploaded.
-* **Conflict Resolution:** If a file is edited simultaneously on two devices, SSS gracefully resolves the conflict based on your rules (e.g., "Keep newer") while automatically generating a `.conflict` backup of the overwritten version.
-
-### 3. Smart Sync Automation
-Built to be a "set-and-forget" solution, Smart Sync watches your writing activity. When you stop typing for a set number of seconds, it silently pushes your changes to the cloud.
-* **Cross-Device Awareness:** When Device A finishes an automated sync, it pushes a tiny state change to the cloud. If Device B is currently open, it immediately detects this change and pulls the updates automatically within seconds, keeping your active screens perfectly matched.
-
-### 4. Frictionless Device Pairing
-Typing long API keys, bucket names, and encryption passwords on a mobile phone is frustrating. SSS solves this with a secure, ephemeral relay system. 
-* Click "Generate Code" on your desktop to bundle your credentials into an **AES-GCM encrypted payload** and send it to our open-source Cloudflare Worker.
-* Enter the short code on your phone to instantly pull and decrypt the configuration. The decryption PIN never leaves your devices, and the payload self-destructs after 10 minutes.
-* visit the open source repository to set up your own pairing instance [here.](https://github.com/xensenx/Secure-Smart-Sync-relay)
-
-## Getting Started
-
-Because Secure-Smart-Sync utilizes your own private infrastructure, the initial setup requires generating API keys and configuring your Cloudflare bucket. 
-
-We have prepared a comprehensive, step-by-step guide to walk you through the process in under 5 minutes. 
-
-1. **[Read the Setup & Usage Guidelines](./Usage_Guidelines.md)**
-2. **[View exact API token usage & limits](./docs/Token_usage_scenarios.md)**
+---
 
 ## Security
 
-Security and privacy are the foundational pillars of this plugin. We do not run any analytics, telemetry, or tracking code. Your encryption keys never leave your devices, and the ephemeral device-pairing relay utilizes end-to-end AES-GCM encryption.
+SSS ships with no analytics, telemetry, or tracking. Encryption keys are generated and stored locally and are never transmitted. The ephemeral pairing relay is open-source, uses AES-GCM end-to-end encryption, and stores nothing after the payload is consumed.
 
-For a deep dive into the cryptographic methods, architecture, and threat models, please read our **[Security Documentation](./SECURITY.md)**.
+Full cryptographic detail is in [SECURITY.md](./SECURITY.md).
 
-## Contributions & Support
+The relay source is at [xensenx/Secure-Smart-Sync-relay](https://github.com/xensenx/Secure-Smart-Sync-relay). You can self-host it if you prefer not to use the default instance.
 
-If you find this plugin helpful in keeping your vault secure, there are a few ways you can support the development:
+---
 
-1. **Star the repository** on GitHub to help others find it.
-2. **Open an issue** if you spot a bug or have a feature request.
-3. **Consider sending a coffee my way** to help fuel late-night coding sessions!
+## Credits
 
-<p>
-  <a href="https://ko-fi.com/xensenx">
-    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi" />
-  </a>
-</p>
+[Remotely Save](https://github.com/remotely-save/remotely-save) provided an early reference for S3-compatible storage that helped accelerate the initial prototyping phase. SSS has since been independently rewritten into a different architecture. The portions of Remotely Save that informed this project are licensed under Apache 2.0.
 
-For more details on how to contribute code, submit pull requests, or help with documentation, please see **[CONTRIBUTING](./CONTRIBUTING.md)**.
+---
 
-## Credits & Acknowledgements
+## License
 
-[Remotely Save](https://github.com/remotely-save/remotely-save) played an important role in the early foundation of Secure-Smart-Sync.
+Code is released under the **MIT License** — see [LICENSE](./LICENSE).
 
-During the earliest prototyping phase, its S3-compatible storage implementation and a few reference files helped me better understand how sync systems interact with object storage and accelerated early experimentation.
+The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and are not covered by the MIT License. The code is free to use and modify; the visual identity and project name are not available for redistribution or rebranding.
 
-Over time, Secure-Smart-Sync was heavily rewritten and evolved into its own independent architecture. Most of the original reference code was eventually replaced as the project moved toward a very different design focused on client-side encryption, three-way diff synchronization, encrypted device pairing, and privacy-first infrastructure.
+---
 
-The primary value of Remotely Save was helping me learn faster during the early stages of development. Code from Remotely Save’s `/pro` directory was **NOT** used.
+<div align="center">
 
-Remotely Save’s open-source components are licensed under the Apache License 2.0. Their original repository and full licensing details can be found in their project repository. This project would have taken significantly longer to prototype without their earlier open-source work, and they deserve proper credit for that contribution.
+If SSS is useful to you, consider supporting its development.
 
-## License & Branding
+<br>
 
+<a href="https://ko-fi.com/xensenx">
+  <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi" height="36">
+</a>
 
+<br><br>
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+<sub>
+  <a href="https://github.com/xensenx/Secure-Smart-Sync">GitHub</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://secure-smart-sync.pages.dev/">Website</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://github.com/xensenx">@xensenx</a>
+</sub>
 
-
-
-> [!IMPORTANT]
-> **Trademark & Branding Notice**
-> The **Secure-Smart-Sync** name, logo, and associated branding assets are copyright © **Sen** and are **not** covered by the MIT License. 
-> While you are free to use, modify, and distribute the software code under the terms of the MIT License, this does not grant permission to use the project's name, logo, or trademarks in a way that suggests endorsement or original authorship. All rights regarding the visual identity and naming of this project are reserved.
+</div>
