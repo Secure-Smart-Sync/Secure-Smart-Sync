@@ -154,6 +154,8 @@ The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and 
 
 <br>
 
+## Support
+
 <a href="https://ko-fi.com/xensenx" style="display: inline-block; vertical-align: middle;">
   <picture>
     <!-- If the theme is dark, use the white logo -->
