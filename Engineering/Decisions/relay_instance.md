@@ -1,5 +1,49 @@
 # Why Relay Pairing Uses Cloudflare Workers + KV
 
+## Initial Approach: QR Based Pairing
+
+The original plan was to make device pairing even simpler through QR codes.
+
+The intended flow was:
+
+1. Existing device generates encrypted pairing payload
+2. Payload gets converted into a QR code
+3. New device scans the QR code
+4. Pairing completes instantly
+
+On paper, this looked like the cleanest solution.
+
+However, after extensive experimentation, this approach repeatedly failed due to platform limitations.
+
+Obsidian does not expose reliable camera permissions to plugins.
+
+Attempts were made to:
+
+- directly access native camera functionality
+- route scanning through browser-based camera access
+- build encrypted QR transfer flows
+
+None of these approaches worked reliably across platforms.
+
+Some methods failed entirely due to permission restrictions.
+Others introduced inconsistent behavior.
+Some created unnecessary security concerns by relying on browser redirects and external scanning flows.
+
+The final fallback option was:
+
+- show QR code inside Obsidian
+- ask users to scan it externally
+- manually copy the generated pairing code
+- paste it back into plugin settings
+
+While technically functional, this still introduced too many steps.
+
+For onboarding, even one unnecessary extra step creates friction.
+
+That approach was ultimately rejected.
+
+---
+
 ## Context
 
 One of the biggest UX problems in encrypted sync systems is onboarding a new device.
@@ -7,7 +51,7 @@ One of the biggest UX problems in encrypted sync systems is onboarding a new dev
 A user may already have Secure Smart Sync configured on one device with:
 
 - encryption keys
-n- bucket credentials
+- bucket credentials
 - sync configuration
 - storage preferences
 
@@ -105,7 +149,9 @@ This allows privacy-conscious users to fully control their pairing infrastructur
 
 This was primarily a **UX decision**.
 
-The goal was to make onboarding a second device feel effortless while keeping credentials encrypted during transit.
+The QR approach failed because platform constraints made it unreliable.
+
+The relay system became the cleanest solution that preserved both simplicity and security.
 
 Users who want simplicity can use the default relay.
 Users who want full infrastructure control can run their own.
