@@ -151,7 +151,9 @@ The relay source is at [xensenx/Secure-Smart-Sync-relay](https://github.com/xens
 
 Code is released under the **MIT License** — see [LICENSE](./LICENSE).
 
-The **Secure-Smart-Sync** name, logo, and branding are copyright &copy; Sen and are not covered by the MIT License. The code is free to use and modify; the visual identity and project name are not available for redistribution or rebranding.
+The **Secure-Smart-Sync** name, logos, icons, embedded SVG branding elements, and overall visual identity remain the intellectual property of &copy; Sen and are not covered under the MIT License.
+
+These branding elements are included in the source code solely for functional product use. Public forks, redistributions, or derivative projects must remove or replace original branding unless explicit permission is granted.
 
 ## Support
 
