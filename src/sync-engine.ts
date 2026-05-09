@@ -1,4 +1,4 @@
-/**
+﻿/**
  * sync-engine.ts
  * Core sync decision engine for Secure-Smart-Sync (SSS).
  */
@@ -30,6 +30,7 @@ export type TaskKind =
   | "delete_local"
   | "mkdir_local"
   | "mkdir_remote"
+  | "keep_both"    // write remote as _conflict_NN locally; push local to remote
   | "skip";
 
 export interface SyncTask {
@@ -86,7 +87,8 @@ export function decideAction(
   entity: MixedEntity,
   direction: SyncDirection,
   conflict: ConflictResolution,
-  maxFileSizeBytes: number
+  maxFileSizeBytes: number,
+  alwaysAsk = false
 ): SyncDecision {
   const { local, prevSync, remote } = entity;
   const key = entity.key;
@@ -108,7 +110,7 @@ export function decideAction(
   if (!prevSync) {
     if (local && !remote) return direction === "pull_only" ? "no_change" : "push_local";
     if (!local && remote) return direction === "push_only" ? "no_change" : "pull_remote";
-    return resolveConflict(local!, remote!, conflict, direction);
+    return resolveConflict(local!, remote!, conflict, direction, alwaysAsk);
   }
 
   const localDeleted  = !local  && !!prevSync;
@@ -135,7 +137,7 @@ export function decideAction(
   if ( localChanged && !remoteChanged) return direction !== "pull_only" ? "push_local"  : "no_change";
   if (!localChanged &&  remoteChanged) return direction !== "push_only" ? "pull_remote" : "no_change";
 
-  return resolveConflict(local!, remote!, conflict, direction);
+  return resolveConflict(local!, remote!, conflict, direction, alwaysAsk);
 }
 
 /**
@@ -179,13 +181,17 @@ function resolveConflict(
   local: FileEntity,
   remote: FileEntity,
   resolution: ConflictResolution,
-  direction: SyncDirection
+  direction: SyncDirection,
+  alwaysAsk: boolean
 ): SyncDecision {
+  if (alwaysAsk) return "conflict_ask";
   if (direction === "push_only") return "conflict_keep_local";
   if (direction === "pull_only") return "conflict_keep_remote";
   switch (resolution) {
     case "keep_local":  return "conflict_keep_local";
     case "keep_remote": return "conflict_keep_remote";
+    case "keep_both":   return "conflict_keep_both";
+    case "ask":         return "conflict_ask";
     case "keep_newer": {
       const lt = local.mtimeCli ?? 0;
       const rt = remote.mtimeCli ?? remote.mtimeSvr ?? 0;
@@ -203,13 +209,13 @@ function resolveConflict(
 
 export function buildTasks(
   mixed: MixedEntity[],
-  settings: Pick<PluginSettings, "syncDirection" | "conflictResolution" | "maxFileSizeBytes" | "ignorePaths">
+  settings: Pick<PluginSettings, "syncDirection" | "conflictResolution" | "conflictAlwaysAsk" | "maxFileSizeBytes" | "ignorePaths">
 ): SyncTask[] {
   const tasks: SyncTask[] = [];
-  const { syncDirection, conflictResolution, maxFileSizeBytes } = settings;
+  const { syncDirection, conflictResolution, conflictAlwaysAsk, maxFileSizeBytes } = settings;
 
   for (const entity of mixed) {
-    const decision = decideAction(entity, syncDirection, conflictResolution, maxFileSizeBytes);
+    const decision = decideAction(entity, syncDirection, conflictResolution, maxFileSizeBytes, conflictAlwaysAsk);
     entity.decision = decision;
     entity.changed = decision !== "no_change" && decision !== "skip_too_large" && decision !== "equal";
     tasks.push({ key: entity.key, kind: decisionToTaskKind(decision), decision, entity });
@@ -231,6 +237,8 @@ function decisionToTaskKind(d: SyncDecision): TaskKind {
     case "conflict_keep_local":  return "push";
     case "pull_remote":
     case "conflict_keep_remote": return "pull";
+    case "conflict_keep_both":   return "keep_both";
+    case "conflict_ask":         return "skip";  // deferred — handled post-queue via onConflictAsk
     case "delete_remote":        return "delete_remote";
     case "delete_local":         return "delete_local";
     case "mkdir_local":          return "mkdir_local";
@@ -241,43 +249,113 @@ function decisionToTaskKind(d: SyncDecision): TaskKind {
 
 // ─── Conflict copy helpers ────────────────────────────────────────────────────
 
-export function conflictBackupKey(key: string): string {
-  // Include HH-MM-SS so multiple conflicts on the same file in one day
-  // each get a unique backup path instead of silently overwriting each other.
-  const ts = new Date().toISOString().slice(0, 19).replace("T", "_").replace(/:/g, "-");
-  const lastDot   = key.lastIndexOf(".");
+/**
+ * Derive the path for the `_conflict_NN` copy of a file.
+ *
+ * The counter is NOT stored anywhere — it is computed by scanning existing
+ * local files at write-time. This gives automatic "reset on rename" behaviour:
+ * a renamed file's stem never has existing conflict slots, so the counter
+ * always starts at 01 for a fresh stem.
+ *
+ * Convention: remote content always becomes the `_conflict_NN` copy.
+ * The local file stays at its canonical path (user's work is never displaced).
+ *
+ * Examples:
+ *   notes.md              →  notes._conflict_01.md
+ *   docs/api/intro.md     →  docs/api/intro._conflict_01.md
+ *   README (no ext)       →  README._conflict_01
+ *   .gitignore (no stem)  →  .gitignore._conflict_01
+ */
+export async function conflictCopyKey(
+  key: string,
+  local: StorageBase,
+  logger?: PluginLogger
+): Promise<string> {
+  // Split path into directory prefix, stem, and extension.
   const lastSlash = key.lastIndexOf("/");
-  if (lastDot > lastSlash && lastDot !== -1) {
-    return `${key.slice(0, lastDot)}.conflict-${ts}${key.slice(lastDot)}`;
+  const dir       = lastSlash >= 0 ? key.slice(0, lastSlash + 1) : "";
+  const fileName  = lastSlash >= 0 ? key.slice(lastSlash + 1)    : key;
+
+  // Extension: everything from the LAST dot that is NOT at position 0
+  // (handles .gitignore, .env, etc. — those have no extension).
+  const dotIdx  = fileName.lastIndexOf(".");
+  const hasDot  = dotIdx > 0;  // > 0 so leading-dot files are treated as no-extension
+  const stem    = hasDot ? fileName.slice(0, dotIdx) : fileName;
+  const ext     = hasDot ? fileName.slice(dotIdx)    : "";
+
+  // Scan slots 01–99 for the first free path.
+  for (let n = 1; n <= 99; n++) {
+    const nn        = String(n).padStart(2, "0");
+    const candidate = `${dir}${stem}._conflict_${nn}${ext}`;
+    try {
+      await local.stat(candidate);
+      // stat succeeded — slot is occupied, try next
+    } catch (err) {
+      const msg = (err as Error).message ?? "";
+      // Any "not found" flavour means the slot is free.
+      if (
+        msg.includes("not found") ||
+        msg.includes("ENOENT")    ||
+        msg.includes("does not exist")
+      ) {
+        return candidate;
+      }
+      // Unexpected error (permissions, I/O) — abort cleanly.
+      throw new Error(
+        `conflictCopyKey: could not stat "${candidate}": ${msg}`
+      );
+    }
   }
-  return `${key}.conflict-${ts}`;
+
+  // All 99 slots occupied — overwrite slot 99 with a warning.
+  const fallback = `${dir}${stem}._conflict_99${ext}`;
+  logger?.warn(`[SSS] All conflict slots occupied for "${key}", overwriting ${fallback}`);
+  return fallback;
 }
 
-async function saveConflictBackup(
+/**
+ * Execute the keep_both resolution:
+ *   1. Read the remote version.
+ *   2. Compute the next available _conflict_NN path.
+ *   3. Write the remote content locally under the conflict path.
+ *   4. Push the local (canonical) version to remote.
+ *
+ * Returns the conflict copy key so the caller can log it.
+ * Throws only for the local-write; remote-push failure is caught and surfaced
+ * in stats to avoid a half-saved state being counted as a full failure.
+ */
+async function executeKeepBoth(
   task: SyncTask,
   local: StorageBase,
   remote: StorageBase,
+  stats: SyncStats,
   logger?: PluginLogger
-): Promise<void> {
-  const { key, decision } = task;
-  if (decision !== "conflict_keep_local" && decision !== "conflict_keep_remote") return;
+): Promise<string | undefined> {
+  const { key } = task;
 
-  const backupKey = conflictBackupKey(key);
+  // Step 1: read remote version.
+  const remoteContent = await remote.readFile(key);
+  const remoteMtime   = task.entity.remote?.mtimeCli ?? task.entity.remote?.mtimeSvr ?? Date.now();
+
+  // Step 2: find a free conflict slot.
+  const conflictKey = await conflictCopyKey(key, local, logger);
+
+  // Step 3: write remote content as the conflict copy locally.
+  await local.writeFile(conflictKey, remoteContent, remoteMtime, remoteMtime);
+  logger?.info(`[SSS] Conflict copy saved: ${conflictKey}`);
+
+  // Step 4: push local canonical version to remote.
   try {
-    if (decision === "conflict_keep_local") {
-      const content = await remote.readFile(key);
-      const mtime = task.entity.remote?.mtimeCli ?? task.entity.remote?.mtimeSvr ?? Date.now();
-      await local.writeFile(backupKey, content, mtime, mtime);
-      logger?.info(`[SSS] Conflict backup saved locally: ${backupKey}`);
-    } else {
-      const content = await local.readFile(key);
-      const mtime = task.entity.local?.mtimeCli ?? Date.now();
-      await remote.writeFile(backupKey, content, mtime, mtime);
-      logger?.info(`[SSS] Conflict backup saved remotely: ${backupKey}`);
-    }
+    await copyFileOrFolder(key, local, remote);
   } catch (err) {
-    logger?.warn(`[SSS] Could not save conflict backup for ${key}:`, (err as Error).message);
+    const msg = `[keep_both push] ${key}: ${(err as Error).message}`;
+    stats.errors.push(msg);
+    logger?.error(msg);
+    // The local conflict copy was already written successfully — do not
+    // re-throw; the canonical key is partially resolved.
   }
+
+  return conflictKey;
 }
 
 // ─── Task executor ────────────────────────────────────────────────────────────
@@ -289,16 +367,36 @@ export interface ExecuteOptions {
   concurrency?: number;
   logger?: PluginLogger;
   onProgress?: (done: number, total: number, key: string) => void;
+  /**
+   * Called for each task with decision `conflict_ask` after the main queue drains.
+   * Receives the conflicting SyncTask; must return the resolution chosen by the user,
+   * or `"skip"` to leave the file untouched for this sync cycle.
+   * If undefined, falls back to the effective `conflictResolution` setting.
+   */
+  onConflictAsk?: (task: SyncTask) => Promise<ConflictResolution | "skip">;
+  /** Fallback conflict resolution when onConflictAsk is not provided or unavailable. */
+  fallbackConflictResolution?: ConflictResolution;
 }
 
 export async function executeTasks(opts: ExecuteOptions): Promise<SyncStats> {
-  const { local, remote, tasks, concurrency = 8, logger, onProgress } = opts;
+  const {
+    local, remote, tasks, concurrency = 8, logger, onProgress,
+    onConflictAsk, fallbackConflictResolution = "keep_newer",
+  } = opts;
   const stats: SyncStats = {
     filesUploaded: 0, filesDownloaded: 0, filesDeleted: 0,
     filesSkipped: 0, conflictsResolved: 0, errors: [], startedAt: Date.now(),
   };
 
-  const actionable = tasks.filter((t) => t.kind !== "skip");
+  // Separate deferred (always-ask) tasks from the main queue.
+  const deferred: SyncTask[] = [];
+  const actionable = tasks.filter((t) => {
+    if (t.decision === "conflict_ask") {
+      deferred.push(t);
+      return false;
+    }
+    return t.kind !== "skip";
+  });
   let done = 0;
 
   // A proper concurrency pool keeps exactly `concurrency` tasks in flight at
@@ -315,9 +413,7 @@ export async function executeTasks(opts: ExecuteOptions): Promise<SyncStats> {
             logger?.warn(`[SSS] Retrying ${task.kind} ${task.key} (attempt ${attempt + 1})…`);
             await delay(RETRY_BASE_MS * Math.pow(2, attempt - 1));
           }
-          await executeTask(task, local, remote, logger);
-          // Increment stats exactly once, after confirmed success.
-          // Moving this out of executeTask prevents double-counting on retries.
+          await executeTask(task, local, remote, stats, logger);
           recordTaskStats(task, stats);
           lastErr = undefined;
           break;
@@ -337,12 +433,76 @@ export async function executeTasks(opts: ExecuteOptions): Promise<SyncStats> {
 
   await queue.onIdle();
 
-  stats.filesSkipped = tasks.length - actionable.length;
+  // ── Deferred conflicts (always-ask) ────────────────────────────────────────
+  // Process after the main queue drains so the user isn’t interrupted mid-sync.
+  for (const task of deferred) {
+    try {
+      let resolution: ConflictResolution | "skip";
+      if (onConflictAsk) {
+        resolution = await onConflictAsk(task);
+      } else {
+        logger?.warn(`[SSS] No conflict resolver provided for "${task.key}", using fallback: ${fallbackConflictResolution}`);
+        resolution = fallbackConflictResolution;
+      }
+
+      if (resolution === "skip") {
+        logger?.info(`[SSS] User skipped conflict for "${task.key}"`);
+        stats.filesSkipped++;
+        continue;
+      }
+
+      // Re-resolve the task with the user’s chosen resolution.
+      const resolvedTask: SyncTask = {
+        ...task,
+        decision: resolutionToDecision(resolution, task),
+        kind: resolution === "keep_both" ? "keep_both"
+              : resolution === "keep_local" || resolution === "keep_newer" || resolution === "keep_larger"
+                ? "push"
+                : "pull",
+      };
+
+      await executeTask(resolvedTask, local, remote, stats, logger);
+      recordTaskStats(resolvedTask, stats);
+    } catch (err) {
+      const msg = `[conflict_ask] ${task.key}: ${(err as Error).message}`;
+      stats.errors.push(msg);
+      logger?.error(msg);
+    }
+  }
+
+  stats.filesSkipped += tasks.length - actionable.length - deferred.length;
   stats.finishedAt = Date.now();
   return stats;
 }
 
-/** Update stats counters after a task has executed successfully. */
+/**
+ * Map a user-chosen ConflictResolution back to a concrete SyncDecision,
+ * respecting keep_newer / keep_larger comparison on the actual entity.
+ */
+function resolutionToDecision(res: ConflictResolution, task: SyncTask): SyncDecision {
+  const { local, remote } = task.entity;
+  switch (res) {
+    case "keep_local":  return "conflict_keep_local";
+    case "keep_remote": return "conflict_keep_remote";
+    case "keep_both":   return "conflict_keep_both";
+    case "keep_newer": {
+      const lt = local?.mtimeCli ?? 0;
+      const rt = remote?.mtimeCli ?? remote?.mtimeSvr ?? 0;
+      return lt >= rt ? "conflict_keep_local" : "conflict_keep_remote";
+    }
+    case "keep_larger": {
+      const ls = local?.size ?? 0;
+      const rs = remote?.size ?? 0;
+      return ls >= rs ? "conflict_keep_local" : "conflict_keep_remote";
+    }
+    case "ask":
+      // 'ask' should never arrive here (it's already been resolved by the modal),
+      // but guard defensively — keep_both is the safest non-destructive fallback.
+      return "conflict_keep_both";
+    default: return "conflict_keep_local";
+  }
+}
+
 function recordTaskStats(task: SyncTask, stats: SyncStats): void {
   switch (task.kind) {
     case "push":
@@ -352,6 +512,9 @@ function recordTaskStats(task: SyncTask, stats: SyncStats): void {
     case "pull":
       if (task.decision.startsWith("conflict")) stats.conflictsResolved++;
       else stats.filesDownloaded++;
+      break;
+    case "keep_both":
+      stats.conflictsResolved++;
       break;
     case "delete_remote":
     case "delete_local":
@@ -364,6 +527,7 @@ async function executeTask(
   task: SyncTask,
   local: StorageBase,
   remote: StorageBase,
+  stats: SyncStats,
   logger?: PluginLogger
 ): Promise<void> {
   const { key, kind, decision } = task;
@@ -371,16 +535,13 @@ async function executeTask(
 
   switch (kind) {
     case "push":
-      if (decision.startsWith("conflict")) {
-        await saveConflictBackup(task, local, remote, logger);
-      }
       await copyFileOrFolder(key, local, remote);
       break;
     case "pull":
-      if (decision.startsWith("conflict")) {
-        await saveConflictBackup(task, local, remote, logger);
-      }
       await copyFileOrFolder(key, remote, local);
+      break;
+    case "keep_both":
+      await executeKeepBoth(task, local, remote, stats, logger);
       break;
     case "delete_remote":
       await remote.rm(key);

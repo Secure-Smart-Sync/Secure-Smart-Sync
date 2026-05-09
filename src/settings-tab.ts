@@ -8,7 +8,9 @@ import type SSSPlugin from "./main";
 import { StorageR2 } from "./storage-r2";
 import { exportCredentialBundle, importCredentialBundle } from "./credentials-transfer";
 import { createPairingSlot, consumePairingSlot, checkRelayHealth } from "./pairing-relay";
+import type { SyncTask } from "./sync-engine";
 import { DEFAULT_RELAY_URL } from "./types";
+import type { ConflictResolution } from "./types";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -66,7 +68,114 @@ const EXTLINK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
   <line x1="10" y1="14" x2="21" y2="3"/>
 </svg>`;
 
-// ─── Pairing Send Modal ───────────────────────────────────────────────────────
+const LOCK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+</svg>`;
+
+// ─── Conflict Resolution Modal ───────────────────────────────────────────────
+
+/**
+ * A minimal, dark-mode-native modal that presents a conflicting file to the
+ * user and collects their resolution choice.
+ *
+ * Design principles:
+ *  - No bright warning colors — uses vault CSS variables only.
+ *  - Typographic hierarchy conveys the diff; no noisy icons.
+ *  - Presented sequentially for each deferred conflict after the queue drains.
+ */
+export class ConflictResolutionModal extends Modal {
+  private readonly task: SyncTask;
+  private readonly index: number;
+  private readonly total: number;
+  private resolve!: (value: ConflictResolution | "skip") => void;
+  readonly result: Promise<ConflictResolution | "skip">;
+
+  constructor(app: App, task: SyncTask, index: number, total: number) {
+    super(app);
+    this.task  = task;
+    this.index = index;
+    this.total = total;
+    this.result = new Promise<ConflictResolution | "skip">((res) => {
+      this.resolve = res;
+    });
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.addClass("sss-conflict-modal");
+
+    // ── Header ───────────────────────────────────────────────────────────────
+    const header = contentEl.createDiv({ cls: "sss-conflict-header" });
+    header.createEl("span", { text: "Sync Conflict", cls: "sss-conflict-title" });
+    if (this.total > 1) {
+      header.createEl("span", {
+        text: `${this.index + 1} of ${this.total}`,
+        cls: "sss-conflict-counter",
+      });
+    }
+
+    // ── File path ────────────────────────────────────────────────────────────
+    contentEl.createEl("p", { text: this.task.key, cls: "sss-conflict-path" });
+
+    // ── Diff table ───────────────────────────────────────────────────────────
+    const { local, remote } = this.task.entity;
+    const table = contentEl.createEl("table", { cls: "sss-conflict-table" });
+    const thead = table.createEl("thead");
+    const hRow  = thead.createEl("tr");
+    hRow.createEl("th", { text: "" });
+    hRow.createEl("th", { text: "This device" });
+    hRow.createEl("th", { text: "Other device" });
+
+    const tbody = table.createEl("tbody");
+    const addRow = (label: string, lVal: string, rVal: string) => {
+      const tr = tbody.createEl("tr");
+      tr.createEl("td", { text: label,  cls: "sss-conflict-label" });
+      tr.createEl("td", { text: lVal });
+      tr.createEl("td", { text: rVal });
+    };
+
+    const fmtDate  = (ms?: number) => ms ? new Date(ms).toLocaleString() : "unknown";
+    const fmtSize  = (b?: number)  => b !== undefined ? `${(b / 1024).toFixed(1)} KB` : "unknown";
+
+    addRow("Modified",
+      fmtDate(local?.mtimeCli),
+      fmtDate(remote?.mtimeCli ?? remote?.mtimeSvr)
+    );
+    addRow("Size",
+      fmtSize(local?.size),
+      fmtSize(remote?.size)
+    );
+
+    // ── Action buttons ───────────────────────────────────────────────────────
+    const actions = contentEl.createDiv({ cls: "sss-conflict-actions" });
+
+    const btn = (label: string, value: ConflictResolution | "skip", cta = false) => {
+      const b = actions.createEl("button", {
+        text: label,
+        cls: cta ? "mod-cta sss-conflict-btn" : "sss-conflict-btn",
+      });
+      b.addEventListener("click", () => {
+        this.resolve(value);
+        this.close();
+      });
+    };
+
+    btn("Keep This Device",  "keep_local",  true);
+    btn("Keep Other Device", "keep_remote");
+    btn("Keep Both",         "keep_both");
+    btn("Skip for Now",      "skip");
+  }
+
+  onClose(): void {
+    // If the user closes the modal without choosing (ESC, backdrop click, etc.),
+    // treat as skip. Guard handles the edge case where close is called before
+    // onOpen (e.g. programmatic modal.close() before modal.open()).
+    this.resolve?.("skip");
+    this.contentEl.empty();
+  }
+}
+
 
 class PairingSendModal extends Modal {
   private pairingCode: string;
@@ -231,12 +340,15 @@ export class SSSSettingTab extends PluginSettingTab {
       try {
         const credJson = await consumePairingSlot(code, { relayUrl: activeRelayUrl(this.plugin) });
         const imported = importCredentialBundle(credJson);
-        Object.assign(this.plugin.settings.r2, imported.r2);
-        this.plugin.settings.encryptionPassword = imported.encryptionPassword;
-        this.plugin.settings.encryptionMethod   = imported.encryptionMethod;
+        // Apply the full settings overlay — v2 bundles include structural sync
+        // prefs; v1 bundles only include r2 + encryption fields.
+        Object.assign(this.plugin.settings, imported);
         await this.plugin.saveSettings();
         (codeInput as HTMLInputElement).value = "";
-        receiveStatus.textContent = "Credentials imported. Test your connection below.";
+        const isFullBundle = (imported as any).syncDirection !== undefined;
+        receiveStatus.textContent = isFullBundle
+          ? "All credentials and sync preferences imported from primary device."
+          : "Credentials imported. Test your connection below.";
         receiveStatus.className   = "sss-receive-status sss-receive-ok";
         this._r2Open = true;  // auto-expand so user can verify + test
         this.display();
@@ -381,6 +493,23 @@ export class SSSSettingTab extends PluginSettingTab {
 
     this._sectionHeading(containerEl, "Encryption");
 
+    const isLocked = this.plugin.settings.encryptionLocked;
+
+    // ── Lock / pre-lock banner ────────────────────────────────────────
+    if (isLocked) {
+      const lockBanner = containerEl.createDiv({ cls: "sss-enc-lock-banner" });
+      const lockIcon = lockBanner.createSpan({ cls: "sss-enc-lock-icon" });
+      lockIcon.innerHTML = LOCK_SVG;
+      lockBanner.createEl("span", {
+        text: "Encryption method is locked to prevent vault lockout. A dedicated migration workflow is required to change it.",
+      });
+    } else if (this.plugin.settings.encryptionPassword) {
+      const preNote = containerEl.createDiv({ cls: "sss-enc-pre-note" });
+      preNote.createEl("span", {
+        text: "Once a sync completes successfully with this password, the method will lock automatically.",
+      });
+    }
+
     new Setting(containerEl)
       .setName("Password")
       .setDesc(
@@ -408,13 +537,15 @@ export class SSSSettingTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl)
+    const methodSetting = new Setting(containerEl)
       .setName("Method")
       .setDesc(
-        "OpenSSL encrypts file content only — folder and file names remain readable in R2. " +
-        "rclone also encrypts file names for maximum privacy."
+        isLocked
+          ? "Locked — changing encryption method requires a migration workflow."
+          : "OpenSSL encrypts file content only — folder and file names remain readable in R2. " +
+            "rclone also encrypts file names for maximum privacy."
       )
-      .addDropdown((dd) =>
+      .addDropdown((dd) => {
         dd
           .addOption("openssl-base64", "OpenSSL AES-CBC (content only)")
           .addOption("rclone-base64",  "rclone Salsa20 (names + content)")
@@ -422,8 +553,22 @@ export class SSSSettingTab extends PluginSettingTab {
           .onChange(async (v: any) => {
             this.plugin.settings.encryptionMethod = v;
             await this.plugin.saveSettings();
-          })
-      );
+          });
+        if (isLocked) {
+          dd.selectEl.disabled = true;
+          dd.selectEl.style.opacity = "0.5";
+          dd.selectEl.style.cursor  = "not-allowed";
+          dd.selectEl.title = "Encryption method is locked";
+        }
+      });
+
+    if (isLocked) {
+      // Append a small inline lock badge to the method setting name.
+      const nameEl = methodSetting.nameEl;
+      const badge = nameEl.createSpan({ cls: "sss-enc-locked-badge" });
+      badge.innerHTML = LOCK_SVG;
+      badge.title = "Locked";
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // 3. SYNC BEHAVIOUR
@@ -447,18 +592,38 @@ export class SSSSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Conflict Resolution")
-      .setDesc("When the same file changed on both devices. The losing version is backed up as .conflict-YYYY-MM-DD.")
+      .setDesc(
+        this.plugin.settings.conflictAlwaysAsk
+          ? "\u201CAlways Ask\u201D is active \u2014 the dropdown below is used as the fallback if the modal is skipped."
+          : "When the same file changed on both devices. The \u2018loser\u2019 is saved as a _conflict_NN copy."
+      )
       .addDropdown((dd) =>
         dd
           .addOption("keep_newer",  "Keep newer")
           .addOption("keep_larger", "Keep larger")
           .addOption("keep_local",  "Always keep local")
           .addOption("keep_remote", "Always keep remote")
+          .addOption("keep_both",   "Keep both (save copy)")
+          .addOption("ask",         "Always ask")
           .setValue(this.plugin.settings.conflictResolution)
           .onChange(async (v: any) => {
             this.plugin.settings.conflictResolution = v;
             await this.plugin.saveSettings();
           })
+      );
+
+    new Setting(containerEl)
+      .setName("Always ask on conflict")
+      .setDesc(
+        "When on, every conflict is deferred to a prompt after the sync completes. " +
+        "Other files sync uninterrupted. The dropdown above acts as the fallback resolution."
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.conflictAlwaysAsk).onChange(async (v) => {
+          this.plugin.settings.conflictAlwaysAsk = v;
+          await this.plugin.saveSettings();
+          this.display();
+        })
       );
 
     new Setting(containerEl)

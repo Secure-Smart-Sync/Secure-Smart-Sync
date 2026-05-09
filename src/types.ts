@@ -63,7 +63,11 @@ export type ConflictResolution =
   | "keep_newer"
   | "keep_larger"
   | "keep_local"
-  | "keep_remote";
+  | "keep_remote"
+  /** Preserve both versions locally; remote copy saved as `<stem>._conflict_NN<ext>`. Smart Sync default. */
+  | "keep_both"
+  /** Defer decision to the user via a post-sync modal. */
+  | "ask";
 
 export type DeleteBehaviour = "trash_local" | "trash_system" | "permanent";
 
@@ -103,14 +107,16 @@ export interface FileEntity {
 
 export type SyncDecision =
   | "equal"
-  | "push_local"          // local → remote
-  | "pull_remote"         // remote → local
-  | "delete_remote"       // local deleted → delete remote copy
-  | "delete_local"        // remote deleted → delete local copy
+  | "push_local"           // local → remote
+  | "pull_remote"          // remote → local
+  | "delete_remote"        // local deleted → delete remote copy
+  | "delete_local"         // remote deleted → delete local copy
   | "conflict_keep_local"
   | "conflict_keep_remote"
   | "conflict_keep_newer"
   | "conflict_keep_larger"
+  | "conflict_keep_both"   // save remote as _conflict_NN copy; canonical = local
+  | "conflict_ask"         // defer to ConflictResolutionModal after queue drains
   | "skip_too_large"
   | "folder_ensure_local"
   | "folder_ensure_remote"
@@ -143,6 +149,12 @@ export interface PluginSettings {
 
   syncDirection: SyncDirection;
   conflictResolution: ConflictResolution;
+  /**
+   * When true, any conflict detected during sync is deferred to a post-sync
+   * modal regardless of the `conflictResolution` dropdown value.
+   * Overrides `conflictResolution` for the purpose of conflict handling.
+   */
+  conflictAlwaysAsk: boolean;
   deleteBehaviour: DeleteBehaviour;
 
   /** Auto-sync interval in milliseconds. -1 = disabled. */
@@ -213,6 +225,13 @@ export interface PluginSettings {
   useCustomRelay: boolean;
   customRelayUrl: string;
 
+  /**
+   * Locks the encryption method once an error-free encrypted write has been
+   * confirmed. Acts as a ratchet — can only be set true, never back to false
+   * without intentional user action (future migration workflow).
+   */
+  encryptionLocked: boolean;
+
   /** Internal: randomly generated vault identifier (used as DB namespace) */
   _vaultId?: string;
 
@@ -231,9 +250,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
   encryptionPassword: "",
   encryptionMethod: "openssl-base64",
+  encryptionLocked: false,
 
   syncDirection: "bidirectional",
   conflictResolution: "keep_newer",
+  conflictAlwaysAsk: false,
   deleteBehaviour: "trash_system",
 
   autoSyncIntervalMs: -1,
