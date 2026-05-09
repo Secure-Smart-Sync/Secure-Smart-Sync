@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Obsidian local config
+.obsidian/workspace.json
+.obsidian/cache/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Package manager locks (uncomment if you don't want them tracked)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
