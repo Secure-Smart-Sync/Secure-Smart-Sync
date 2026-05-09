@@ -155,6 +155,8 @@ The **Secure-Smart-Sync** name, logos, icons, embedded SVG branding elements, an
 
 These branding elements are included in the source code solely for functional product use. Public forks, redistributions, or derivative projects must remove or replace original branding unless explicit permission is granted.
 
+see — [LICENSE_BRANDING](./LICENSE_BRANDING.md) 
+
 ## Support
 
 <div align="center">
