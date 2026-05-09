@@ -547,3 +547,158 @@
   opacity: 0.6;
   margin-left: 8px;
 }
+
+/* ─── Encryption lock UI ─────────────────────────────────────────────────── */
+
+/* Yellow warning banner shown when the encryption method is locked */
+.sss-enc-lock-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--font-small);
+  color: var(--text-normal);
+  background: rgba(234, 179, 8, 0.10);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  border-radius: var(--radius-s);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.sss-enc-lock-icon {
+  flex-shrink: 0;
+  color: #ca8a04;
+  display: flex;
+  align-items: center;
+  padding-top: 1px;
+}
+
+/* Blue info note shown before the lock triggers */
+.sss-enc-pre-note {
+  display: flex;
+  align-items: flex-start;
+  font-size: var(--font-small);
+  color: var(--text-muted);
+  background: rgba(59, 130, 246, 0.07);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-s);
+  padding: 7px 12px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* Inline lock badge appended to the Method setting label */
+.sss-enc-locked-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  color: #ca8a04;
+  vertical-align: middle;
+  opacity: 0.85;
+}
+
+/* ─── Conflict Resolution Modal ──────────────────────────────────────────── */
+
+.sss-conflict-modal .modal-content {
+  max-width: 440px;
+  padding-bottom: 8px;
+}
+
+.sss-conflict-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sss-conflict-title {
+  font-size: var(--font-ui-medium);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.sss-conflict-counter {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Monospace path, truncated with ellipsis on overflow */
+.sss-conflict-path {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 4px 8px;
+  margin: 0 0 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;   /* shows the filename end (most meaningful part) when truncated */
+  text-align: left;
+}
+
+/* Minimal diff table */
+.sss-conflict-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-ui-smaller);
+  margin-bottom: 18px;
+}
+
+.sss-conflict-table th,
+.sss-conflict-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  text-align: left;
+}
+
+.sss-conflict-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.sss-conflict-label {
+  color: var(--text-muted);
+  white-space: nowrap;
+  width: 1%;
+}
+
+/* Action buttons row */
+.sss-conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.sss-conflict-btn {
+  font-size: var(--font-ui-smaller);
+  padding: 5px 14px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.sss-conflict-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.sss-conflict-btn.mod-cta {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: transparent;
+}
+
+.sss-conflict-btn.mod-cta:hover {
+  background: var(--interactive-accent-hover);
+}
