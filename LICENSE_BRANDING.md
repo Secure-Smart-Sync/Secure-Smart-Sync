@@ -1,38 +1,36 @@
-# Secure Smart Sync Branding License
+## Secure Smart Sync Branding License
 
 The source code of Secure Smart Sync is licensed under the MIT License unless otherwise stated.
 
 Certain portions derived from external references may remain subject to their original licenses, such as Apache 2.0 where explicitly credited.
 
-## Branding Ownership
+#### Branding Ownership
 
 The following assets are not covered under the MIT License:
 
-Secure Smart Sync name
+1. Secure Smart Sync name
 
-Secure Smart Sync logos
+2. Secure Smart Sync logos
 
-Icons
+3. Icons
 
-Embedded SVG branding elements within source files
+4. Embedded SVG branding elements within source files
 
-Visual identity assets
+5. Visual identity assets
 
-Marketing assets
+6. Marketing assets
 
-Brand graphics
-
-Official project imagery
+7. Brand graphics
 
 These materials remain the intellectual property of © Sen unless explicit written permission is granted.
 
-## Functional Inclusion
+#### Functional Inclusion
 
 Some branding assets are embedded directly within the source code for functional product usage, including plugin UI rendering, settings interfaces, and status indicators.
 
 Their inclusion within source files does not transfer branding rights under the MIT License.
 
-## Public Forks and Redistribution
+#### Public Forks and Redistribution
 
 You may fork, modify, and redistribute the source code under the MIT License.
 
@@ -42,10 +40,10 @@ This includes the project name, logos, icons, embedded branding assets, and othe
 
 Derivative projects must not present themselves as official Secure Smart Sync products unless explicit permission is granted.
 
-## Personal and Private Use
+#### Personal and Private Use
 
 Private forks, personal experimentation, educational usage, and internal modifications do not require branding changes unless publicly redistributed.
 
-## Official Project
+#### Official Project
 
 Official releases, documentation, branding assets, and project identity are maintained through the official Secure Smart Sync GitHub organization, documentation channels, and website.
