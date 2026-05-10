@@ -180,3 +180,5 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
     width="120"
     alt="Support on Ko-fi">
 </picture>
+
+<Strong>Consider Supporting the developer if you've found this plugin to be useful!</strong>
