@@ -3,24 +3,17 @@
 <picture>
   <source
     media="(prefers-color-scheme: light)"
-    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets@v1.0.0/Icons/SVG/icon_black_transparent.svg">
+    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/icon_black_transparent.svg">
 
   <source
     media="(prefers-color-scheme: dark)"
-    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets@v1.0.0/Icons/SVG/icon_white_transparent.svg">
+    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/icon_white_transparent.svg">
 
   <img
-    src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets@v1.0.0/Icons/SVG/icon_white_transparent.svg"
+    src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/icon_white_transparent.svg"
     width="150"
     alt="Secure Smart Sync">
 </picture>
-
-<h2>Secure Smart Sync</h2>
-
-<p>
-Privacy-first Obsidian vault sync via Cloudflare R2 with client-side encryption.<br>
-Your files never leave your device unencrypted.
-</p>
 
 </div>
 
