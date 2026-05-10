@@ -17,7 +17,9 @@
 
 </div>
 
-<center>Secure Smart Sync</center>
+<div align="center">
+  <h1>Secure Smart Sync</h1>
+</div>
 
 **Not affiliated with [Obsidian Sync](https://obsidian.md/sync).** SSS runs entirely on your own Cloudflare R2 bucket. You own the storage, the keys, and the data.
 
