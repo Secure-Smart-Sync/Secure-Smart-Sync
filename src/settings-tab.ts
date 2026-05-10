@@ -941,7 +941,7 @@ export class SSSSettingTab extends PluginSettingTab {
       iconSvg:  GITHUB_SVG,
       label:    "GitHub Repository",
       desc:     "Source code, issues, and changelogs",
-      href:     "https://github.com/xensenx/Secure-Smart-Sync",
+      href:     "https://github.com/Secure-Smart-Sync/Secure-Smart-Sync",
     });
 
     this._resourceCard(resources, {
@@ -961,7 +961,7 @@ export class SSSSettingTab extends PluginSettingTab {
 
     this._resourceCard(resources, {
       iconSvg:  GITHUB_SVG,
-      label:    "Developer — @xensenx",
+      label:    "Developer — Sen",
       desc:     "Other projects and work",
       href:     "https://github.com/xensenx",
     });
