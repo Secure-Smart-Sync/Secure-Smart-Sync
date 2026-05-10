@@ -110,17 +110,8 @@ Self-destructs after 10 minutes.
 
 ## Get started
 
-**1. Create your R2 bucket**
 
-Log in to Cloudflare, create an R2 bucket, and generate an API token with read and write permissions. The [visual setup guide](https://secure-smart-sync.pages.dev/) walks through every step.
-
-**2. Install the plugin**
-
-Install Secure-Smart-Sync from the Obsidian Community Plugins browser, or download the [latest release](https://github.com/xensenx/Secure-Smart-Sync/releases) and copy it to your vault's `.obsidian/plugins/` folder.
-
-**3. Configure and sync**
-
-Open the SSS settings tab, expand **Configure Connection**, enter your R2 endpoint and credentials, and run a connection test. Enable **Smart Sync** and you are done. Pair additional devices in under thirty seconds using the built-in pairing code.
+<coming soon>
 
 
 
