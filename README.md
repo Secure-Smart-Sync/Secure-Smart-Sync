@@ -36,13 +36,11 @@ Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[offi
 
 ## How it works
 
-<h2>How it works</h2>
-
 <br>
 
 <table width="100%">
 <tr>
-<td width="50%" valign="top" align="center" style="padding: 20px;">
+<td width="50%" valign="top" align="left" style="padding: 20px;">
 
 <h3>Zero-Knowledge Encryption</h3>
 
