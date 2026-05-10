@@ -54,7 +54,7 @@ Your password never leaves your device — storage providers only see ciphertext
 
 </td>
 
-<td width="50%" valign="top" align="center" style="padding: 20px;">
+<td width="50%" valign="top" align="left" style="padding: 20px;">
 
 <h3>Three-Way Diff Engine</h3>
 
@@ -71,7 +71,7 @@ Conflicts follow your rules and are backed up automatically.
 </tr>
 
 <tr>
-<td width="50%" valign="top" align="center" style="padding: 20px;">
+<td width="50%" valign="top" align="left" style="padding: 20px;">
 
 <h3>Smart Sync</h3>
 
@@ -86,7 +86,7 @@ No intrusive popups.
 
 </td>
 
-<td width="50%" valign="top" align="center" style="padding: 20px;">
+<td width="50%" valign="top" align="left" style="padding: 20px;">
 
 <h3>Instant Device Pairing</h3>
 
