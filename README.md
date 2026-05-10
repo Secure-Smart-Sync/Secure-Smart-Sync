@@ -17,7 +17,7 @@
 
 </div>
 
-**Not affiliated with [Obsidian Sync](https://obsidian.md/sync). **SSS runs entirely on your own Cloudflare R2 bucket. You own the storage, the keys, and the data.
+**Not affiliated with [Obsidian Sync](https://obsidian.md/sync).** SSS runs entirely on your own Cloudflare R2 bucket. You own the storage, the keys, and the data.
 
 Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[official site](https://secure-smart-sync.pages.dev/)** has a visual walkthrough that takes under five minutes.
 
