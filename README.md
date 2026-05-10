@@ -166,16 +166,13 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 
 ## Support
 
-<div align="center">
-<a href="https://ko-fi.com/xensenx" style="display: inline-block; vertical-align: middle;">
-  <picture>
-    <!-- If the theme is dark, use the white logo -->
-    <source srcset="assets/Ko-fi_white.svg" media="(prefers-color-scheme: dark)">
-    <!-- Default/Light theme uses the black logo -->
-    <img src="assets/Ko-fi_black.svg" alt="Support me on Ko-fi" width="120">
-  </picture>
-</a>
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg">
 
-<strong>If the plugin has helped you and saved your time, consider supporting the developer</strong>
-
-</div>
+  <img
+    src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_black.svg"
+    width="120"
+    alt="Support on Ko-fi">
+</picture>
