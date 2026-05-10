@@ -166,6 +166,10 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 
 ## Support
 
+<div align="center">
+
+<a href="https://ko-fi.com/xensenx" target="_blank">
+
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -181,4 +185,8 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
     alt="Support on Ko-fi">
 </picture>
 
-<Strong>Consider Supporting the developer if you've found this plugin to be useful!</strong>
+</a>
+
+<strong>If the plugin has helped you and saved your time, consider supporting the developer</strong>
+
+</div>
