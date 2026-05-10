@@ -171,8 +171,12 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
     media="(prefers-color-scheme: dark)"
     srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg">
 
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_black.svg">
+
   <img
-    src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_black.svg"
+    src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg"
     width="120"
     alt="Support on Ko-fi">
 </picture>
