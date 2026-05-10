@@ -21,6 +21,14 @@
 
 Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[official site](https://secure-smart-sync.pages.dev/)** has a visual walkthrough that takes under five minutes.
 
+##Overview
+
+<p align="center">
+  <img
+    src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Banners/sss_banner_adjusted_Color.png"
+    alt="Secure Smart Sync Banner"
+    width="100%">
+</p>
 
 ## How it works
 
