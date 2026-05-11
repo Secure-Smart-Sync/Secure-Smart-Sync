@@ -153,7 +153,7 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 
 ## Support
 
-<div align="center">
+<div align="left">
 
 <a href="https://ko-fi.com/xensenx" target="_blank">
 
@@ -177,3 +177,13 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 <strong>If the plugin has helped you and saved your time, consider supporting the developer</strong>
 
 </div>
+
+## Contact & Support
+
+Have a question or a suggestion? Here is how to get in touch:
+
+* **Bug Reports:** Please **[open an issue on GitHub]((https://github.com/Secure-Smart-Sync/Secure-Smart-Sync/issues))** so we can track and fix it.
+* **General Inquiries:** For all other genuine inquiries, feel free to email us at **securesmartsync@gmail.com**.
+
+We aim to respond to all non-technical messages within 48 hours.
+
