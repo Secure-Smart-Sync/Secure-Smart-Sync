@@ -183,7 +183,7 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 Have a question or a suggestion? Here is how to get in touch:
 
 * **Bug Reports:** Please **[open an issue on GitHub]((https://github.com/Secure-Smart-Sync/Secure-Smart-Sync/issues))** so we can track and fix it.
-* **General Inquiries:** For all other genuine inquiries, feel free to email us at **securesmartsync@gmail.com**.
+* **General Inquiries:** For all other genuine inquiries, feel free to email us at **[securesmartsync@gmail.com](mailto:securesmartsync@gmail.com)**
 
 We aim to respond to all non-technical messages within 48 hours.
 
