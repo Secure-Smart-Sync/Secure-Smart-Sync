@@ -178,7 +178,7 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 
 </div>
 
-## Contact & Support
+## Contact & help
 
 Have a question or a suggestion? Here is how to get in touch:
 
