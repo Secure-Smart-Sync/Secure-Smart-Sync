@@ -23,8 +23,6 @@
 
 **Not affiliated with [Obsidian Sync](https://obsidian.md/sync).** SSS runs entirely on your own Cloudflare R2 bucket. You own the storage, the keys, and the data.
 
-Read the **[Usage Guidelines](./Usage_Guidelines.md)** before setup. The **[official site](https://secure-smart-sync.pages.dev/)** has a visual walkthrough that takes under five minutes.
-
 ## Overview
 
 <p align="center">
@@ -106,13 +104,15 @@ Self-destructs after 10 minutes.
 
 <br>
 
+## Getting Started
 
+Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete setup guide, including:
 
-## Get started
+* **Installation** & **Setup**
+* **Configuration**
+* **Critical Security Information**
 
-
-<coming soon>
-
+Prefer a visual guide? Visit our **[official site](https://pages.dev)** for a 5-minute walkthrough and comprehensive documentation.
 
 
 ## Documentation
