@@ -168,7 +168,7 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 
   <img
     src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg"
-    width="60"
+    width="90"
     alt="Support on Ko-fi">
 </picture>
 
