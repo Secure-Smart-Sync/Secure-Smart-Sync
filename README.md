@@ -153,30 +153,22 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
 
 ## Support
 
-<div align="left">
-
-<a href="https://ko-fi.com/xensenx" target="_blank">
-
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg">
-
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_black.svg">
-
-  <img
-    src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg"
-    width="90"
-    alt="Support on Ko-fi">
-</picture>
-
-</a>
-
-<strong>If the plugin has helped you and saved your time, consider supporting the developer</strong>
-
-</div>
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://ko-fi.com/xensenx" target="_blank">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg">
+          <source media="(prefers-color-scheme: light)" srcset="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_black.svg">
+          <img src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Icons/SVG/Ko-fi_white.svg" width="90" alt="Support on Ko-fi">
+        </picture>
+      </a>
+    </td>
+    <td align="left">
+      <strong>If the plugin has helped you and saved your time, consider supporting the developer</strong>
+    </td>
+  </tr>
+</table>
 
 ## Contact & help
 
