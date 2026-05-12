@@ -152,7 +152,6 @@ These branding elements are included in the source code solely for functional pr
 see — [LICENSE_BRANDING](./LICENSE_BRANDING.md) 
 
 ## Support
-
 <div align="left">
   <a href="https://ko-fi.com/xensenx" target="_blank">
     <picture>
@@ -162,9 +161,9 @@ see — [LICENSE_BRANDING](./LICENSE_BRANDING.md)
     </picture>
   </a>
   
-
   <br>
-  <strong>&nbsp;&nbsp;If the plugin has helped you and saved your time, consider supporting the developer</strong>
+  <strong>&nbsp;&nbsp;If the plugin has helped you and saved your time,</strong><br>
+  <strong>&nbsp;&nbsp;consider supporting the developer.</strong>
 </div>
 
 <br clear="all" />
