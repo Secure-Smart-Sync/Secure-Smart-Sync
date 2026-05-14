@@ -114,7 +114,7 @@ Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete setup guid
 * **Configuration**
 * **Critical Security Information**
 
-Prefer a visual guide? Visit our **[official site](https://secure-smart-sync.pages.dev)** for a 5-minute walkthrough and comprehensive documentation.
+**Prefer a visual guide?** Visit our **[official site Secure Smart Sync](https://secure-smart-sync.pages.dev)** for all you need to get started in 5-minute visual walkthrough along with comprehensive documentation.
 
 
 ## Documentation
