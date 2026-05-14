@@ -34,15 +34,34 @@
     width="100%">
 </p>
 
+## Features in breif:
+
+1. Private Cloud Storage: Syncs notes across all devices via your personal storage, keeping third parties out.
+2. Total Privacy: Locks your files with a password before they leave your device, making them completely unreadable to outsiders.
+3. Smart Automation: Quietly saves your work in the background a few seconds after you stop typing or open the app.
+4. Quick Device Linking: Connects new phones or computers instantly using a short, temporary pairing code.
+5. Conflict Protection: Safely preserves both versions if you edit the exact same note on two devices simultaneously.
+6. Distraction-Free: Runs silently using a tiny visual indicator instead of annoying pop-up alerts.
+7. Settings Backup: Syncs your custom themes, layouts, and plugins alongside your regular writing.
+8. Selective Syncing: Lets you easily ignore specific folders or skip massive files to save storage space.
+9. Safe Deletion: Sends deleted notes directly to your system trash so you can easily recover accidental mistakes.
++more 
+
 ## Getting Started
 
-Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete setup guide, including:
+Note : Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete and comprehensive setup guide, including:
 
 * **Installation** & **Setup**
-* **Configuration**
+* **Settings-Configuration**
 * **Critical Security Information**
-
+  
 **Prefer a visual guide?** Visit our **[official site Secure Smart Sync](https://secure-smart-sync.pages.dev)** for all you need to get started in 5-minute visual walkthrough along with comprehensive documentation.
+
+### Quick-Start 
+
+> [!NOTE]
+> It is highly recommended you either refer to either [Usage Guidelines](./Usage_Guidelines.md) or visit our [official site Secure Smart Sync](https://secure-smart-sync.pages.dev) for one time proper set-up, the Quick-start here does not cover all the technical caveats or details required for Best setup! 
+
 
 
 
