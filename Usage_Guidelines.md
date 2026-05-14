@@ -21,7 +21,7 @@ SSS uses Cloudflare R2 as its remote storage backend. To use this plugin, you wi
 
 If you haven't already, you must enable the **R2 Subscription** in your Cloudflare dashboard to unlock their highly generous free tier. To do this, Cloudflare requires you to add a valid payment method, such as an international credit/debit card (Visa, Mastercard, etc.). For a full list of supported payment methods, please check out the [Cloudflare Billing Documentation](https://developers.cloudflare.com/billing/).
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT NOTE ON BILLING:** 
+> [!IMPORTANT]
 > Adding a billing method is strictly an industry-standard measure by Cloudflare to prevent bot abuse and spam. **It actually costs $0.00 to set up.** You will not be charged to activate R2, and as long as you stay within the free tier, you will never pay a cent.
 
 ## 3. Will I exceed the Free Tier?
