@@ -73,7 +73,7 @@ Open your Obsidian settings and navigate to the Secure-Smart-Sync plugin options
 *   **Remote Prefix:** If you want to store your vault inside a specific folder within the bucket, enter the folder name here (e.g., `DesktopVault/`).
 *   **Sync .obsidian Config Directory:** Toggle this on if you want to sync your themes, snippets, and plugin settings alongside your markdown files.
 
-> [!IMPORTANT-PRIVACY-NOTICE]
+> [!NOTICE]
 > All of these credentials are saved locally on your device in plain text at `.obsidian/plugins/secure-smart-sync/data.json`. They are never transmitted anywhere except directly to Cloudflare.
 
 You can click the **Test** button at the bottom of this section to verify that the plugin can successfully connect to your bucket.
