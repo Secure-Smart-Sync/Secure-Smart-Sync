@@ -23,6 +23,8 @@
 
 **Not affiliated with [Obsidian Sync](https://obsidian.md/sync).** SSS runs entirely on your own Cloudflare R2 bucket. You own the storage, the keys, and the data.
 
+**Smart Move :** Secure-Smart-Sync has been tested across multiple devices and typical workflows. As with any sync system, edge cases can occur in complex scenarios — offline conflicts, unusual file structures, or interrupted syncs. **Keeping a local backup of your vault is always a smart habit.**
+
 ## Overview
 
 <p align="center">
