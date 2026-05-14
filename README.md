@@ -55,12 +55,16 @@ Note : Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete and
 * **Settings-Configuration**
 * **Critical Security Information**
   
-**Prefer a visual guide?** Visit our **[official site Secure Smart Sync](https://secure-smart-sync.pages.dev)** for all you need to get started in 5-minute visual walkthrough along with comprehensive documentation.
+**Prefer a visual guide?** Visit our **[official site Secure Smart Sync](https://secure-smart-sync.pages.dev)** for all you need to get started in 5-minute walkthrough along with comprehensive documentation.
 
 ### Quick-Start 
 
 > [!NOTE]
-> It is highly recommended you either refer to either [Usage Guidelines](./Usage_Guidelines.md) or visit our [official site Secure Smart Sync](https://secure-smart-sync.pages.dev) for one time proper set-up, the Quick-start here does not cover all the technical caveats or details required for Best setup! 
+> It is highly recommended you either refer to [Usage Guidelines](./Usage_Guidelines.md) or visit our [official site Secure Smart Sync](https://secure-smart-sync.pages.dev) for one time proper set-up, the Quick-start here does not cover all the technical caveats or details required for Best setup!
+
+**Prequisites**
+
+1. Cloudflare account + billing method for activating R2 Subscription.
 
 
 
