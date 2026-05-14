@@ -34,6 +34,18 @@
     width="100%">
 </p>
 
+## Getting Started
+
+Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete setup guide, including:
+
+* **Installation** & **Setup**
+* **Configuration**
+* **Critical Security Information**
+
+**Prefer a visual guide?** Visit our **[official site Secure Smart Sync](https://secure-smart-sync.pages.dev)** for all you need to get started in 5-minute visual walkthrough along with comprehensive documentation.
+
+
+
 ## How it works
 
 <br>
@@ -105,16 +117,6 @@ Self-destructs after 10 minutes.
 </table>
 
 <br>
-
-## Getting Started
-
-Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete setup guide, including:
-
-* **Installation** & **Setup**
-* **Configuration**
-* **Critical Security Information**
-
-**Prefer a visual guide?** Visit our **[official site Secure Smart Sync](https://secure-smart-sync.pages.dev)** for all you need to get started in 5-minute visual walkthrough along with comprehensive documentation.
 
 
 ## Documentation
