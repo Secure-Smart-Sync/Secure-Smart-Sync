@@ -85,7 +85,8 @@ Without a password, your files will be uploaded directly to Cloudflare. While Cl
 1. Enter a strong **Password** in the Encryption section.
 2. Select an **Encryption Method**. Either `openssl-base64` (encrypts content only) or `rclone-base64` (encrypts content *and* file names) is fine. 
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** **Do not change your encryption password or method after your first sync.** Doing so will make all existing files on the remote server unreadable to your local device. If you ever must change it, you will need to completely wipe your remote bucket and perform a full re-sync from scratch.
+> [!CAUTION]
+> **Do not change your encryption password or method after your first sync.** Doing so will make all existing files on the remote server unreadable to your local device. If you ever must change it, you will need to completely wipe your remote bucket and perform a full re-sync from scratch.
 
 ## 8. Device Pairing (Setting up Mobile / Other Devices)
 
@@ -103,7 +104,8 @@ Entering long API keys and passwords on a mobile device is frustrating. We have 
 
 *Note: Pairing codes are single-use and expire after 10 minutes. If you are setting up three devices, you must generate a fresh code on the primary device for each new setup.*
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** It is absolutely critical that the **Password** and **Encryption Method** remain perfectly identical across all devices. If there is a mismatch, the devices will not be able to read each other's files, and the sync engine will likely create conflicting duplicate folders.
+> [!IMPORTANT]
+> It is absolutely critical that the **Password** and **Encryption Method** remain perfectly identical across all devices. If there is a mismatch, the devices will not be able to read each other's files, and the sync engine will likely create conflicting duplicate folders.
 
 ## 9. The First Sync
 
@@ -135,7 +137,8 @@ A "conflict" happens if you edit the exact same file on two different devices be
 *   **Always keep local:** The device performing the sync always overrides the cloud version.
 *   **Always keep remote:** The cloud version always overrides the local device.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **Notice:** More advanced conflict resolution features, such as "Always ask" and "Keep both (create a copy)", are currently in development.
+> [!NOTE]
+> More advanced conflict resolution features, such as "Always ask" and "Keep both (create a copy)", are currently in development.
 
 ### Delete Behaviour
 When a file is deleted on one device, the sync engine will delete it on your other devices to keep everything matched. This setting determines where that deleted local file goes:
@@ -180,7 +183,8 @@ If you turn Smart Sync **Off**, you can individually configure the following tri
 *   **Sync on Save Debounce (seconds):** Triggers a sync X seconds after a file save is detected by the OS.
 *   **Sync on Idle (seconds):** Triggers a sync X seconds after you stop typing.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Manual configuration does not feature the full, real-time cross-device awareness that Smart Sync provides. Unless you configure an "Auto-Sync Interval", your other devices will not automatically know if this device has synced. 
+> [!NOTE]
+> Manual configuration does not feature the full, real-time cross-device awareness that Smart Sync provides. Unless you configure an "Auto-Sync Interval", your other devices will not automatically know if this device has synced. 
 
 While manual configuration can provide a highly stable system if configured correctly, it requires careful tuning. For more information on exact recommended manual configurations, please refer to the `docs` folder in the repository.
 
@@ -190,7 +194,8 @@ Because Secure-Smart-Sync is a platform-independent plugin, and the user interfa
 
 To keep your writing experience perfectly uninterrupted, **standard pop-up toasts will only appear when you manually trigger a sync**. All automatic syncs happen silently in the background using visual colour cues instead.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** You can force the plugin to always use pop-ups by turning on **"Use toast notifications for auto-sync"** in the Automation settings. However, this is not recommended as it becomes very intrusive during active writing sessions.
+> [!TIP]
+> You can force the plugin to always use pop-ups by turning on **"Use toast notifications for auto-sync"** in the Automation settings. However, this is NOT recommended as it becomes very intrusive during active writing sessions.
 
 ### The Mobile Experience
 On mobile, Obsidian hides the ribbon menu inside a drawer and lacks a persistent bottom status bar. To solve this, SSS adds a small, aesthetic custom icon directly to the main dashboard (sitting comfortably next to the sidebar toggle button) designed to feel completely native.
@@ -219,7 +224,8 @@ The Advanced section provides additional controls for power users and troublesho
 
 * **Reset Sync History:** Clears the local database record of what was last synced. The plugin uses an internal database to track file states (like ETags and modification times) to optimize differential syncing. Clicking "Reset" wipes this memory, forcing the engine to perform a full, deep comparison of all local and remote files on the next run.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** Resetting the sync history does not delete any of your actual markdown files or remote data. It only deletes the plugin's tracking memory. Use this feature to force a clean slate if you suspect your sync state has become confused or corrupted.
+> [!WARNING]
+> Resetting the sync history does not delete any of your actual markdown files or remote data. It only deletes the plugin's tracking memory. Use this feature to force a clean slate if you suspect your sync state has become confused or corrupted.
 
 ## 15. Documentation & Additional Resources
 
