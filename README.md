@@ -112,8 +112,6 @@ Without a password, your files will be uploaded directly to Cloudflare. While Cl
 **Device Pairing**
 
 Entering long API keys and passwords on a mobile device is frustrating. We have built an encrypted relay mechanism to make this seamless.
-
-**On your Primary Device (Desktop):**
 1. Scroll to the **Pair Devices** section in the SSS settings.
 2. Click **Generate Code**. This will package your R2 credentials and encryption settings into a secure, temporary code.
 
@@ -133,7 +131,7 @@ Entering long API keys and passwords on a mobile device is frustrating. We have 
 *Note: Pairing codes are single-use and expire after 10 minutes. If you are setting up three devices, you must generate a fresh code on the primary device for each new setup.*
 
 
-## How it works
+## Architecture
 
 <br>
 
