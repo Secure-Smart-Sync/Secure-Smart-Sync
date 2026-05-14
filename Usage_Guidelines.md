@@ -57,7 +57,8 @@ Secure-Smart-Sync needs permission to talk to your new bucket. You will generate
 6. Under **Specify bucket(s)**, select **Apply to specific buckets only** and choose the bucket you just created.
 7. Click **Create API Token**.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT:** The next screen will show your **Secret Access Key**. This will only be shown *once*. Do not close the window until you have copied these credentials into the plugin.
+> [!IMPORTANT]
+> The next screen will show your **Secret Access Key**. This will only be shown *once*. Do not close the window until you have copied these credentials into the plugin.
 
 ## 6. Entering Credentials in Obsidian
 
@@ -72,7 +73,8 @@ Open your Obsidian settings and navigate to the Secure-Smart-Sync plugin options
 *   **Remote Prefix:** If you want to store your vault inside a specific folder within the bucket, enter the folder name here (e.g., `DesktopVault/`).
 *   **Sync .obsidian Config Directory:** Toggle this on if you want to sync your themes, snippets, and plugin settings alongside your markdown files.
 
-> <picture><source media="(prefers-color-scheme: dark)" srcset="./assets/alert_white.svg"><source media="(prefers-color-scheme: light)" srcset="./assets/alert_white.svg"><img alt="Alert" src="./assets/alert_white.svg" width="16" height="16" align="center"></picture> **IMPORTANT PRIVACY NOTE:** All of these credentials are saved locally on your device in plain text at `.obsidian/plugins/secure-smart-sync/data.json`. They are never transmitted anywhere except directly to Cloudflare.
+> [!IMPORTANT PRIVACY NOTICE]
+> All of these credentials are saved locally on your device in plain text at `.obsidian/plugins/secure-smart-sync/data.json`. They are never transmitted anywhere except directly to Cloudflare.
 
 You can click the **Test** button at the bottom of this section to verify that the plugin can successfully connect to your bucket.
 
