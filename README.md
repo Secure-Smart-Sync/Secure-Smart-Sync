@@ -218,7 +218,7 @@ Self-destructs after 10 minutes.
 | [Security](./SECURITY.md) | Cryptographic methods, architecture, and threat model |
 | [R2 Usage & Limits](./docs/token_usage_scenarios.md) | Free-tier op analysis across vault sizes and device counts |
 | [Contributing](./CONTRIBUTING.md) | Bug reports, pull requests, and documentation |
-| [About](./docs/About.md) | 
+| [About](./docs/About.md) | About Secure Smart Sync | 
 
 
 
