@@ -228,7 +228,7 @@ SSS ships with no analytics, telemetry, or tracking. Encryption keys are generat
 
 Full cryptographic detail is in [SECURITY.md](./SECURITY.md).
 
-The relay source is at [xensenx/Secure-Smart-Sync-relay](https://github.com/xensenx/Secure-Smart-Sync-relay). You can self-host it if you prefer not to use the default instance.
+The relay source is at [Secure-Smart-Sync-relay](https://github.com/Secure-Smart-Sync/Secure-Smart-Sync-relay). You can self-host it if you prefer not to use the default instance.
 
 
 
