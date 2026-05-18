@@ -205,14 +205,20 @@ Self-destructs after 10 minutes.
 <br>
 
 
-## Documentation
+## Resources
 
 | | |
 |---|---|
+| [Official Website](https://secure-smart-sync.pages.dev/) | Visual set-up and beginner's guide and Documentations |
+| [Token calculator](https://secure-smart-sync.pages.dev/token-calculator) | Calculate your R2 Monthly usage |
 | [Usage Guidelines](./Usage_Guidelines.md) | Initial setup, configuration reference, and day-to-day usage |
+| [Core Architecture](./docs/Core_architecture.md) | Architectural outline | 
+| [Core philosophy](./docs/Core_philosophy.md) | Guiding principles of the project | 
+| [Troubleshooting](./docs/TROUBLESHOOTING.md) | Common errors and troubleshooting guide | 
 | [Security](./SECURITY.md) | Cryptographic methods, architecture, and threat model |
 | [R2 Usage & Limits](./docs/token_usage_scenarios.md) | Free-tier op analysis across vault sizes and device counts |
 | [Contributing](./CONTRIBUTING.md) | Bug reports, pull requests, and documentation |
+| [About](./docs/About.md) | 
 
 
 
