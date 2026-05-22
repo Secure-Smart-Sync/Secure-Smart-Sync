@@ -59,7 +59,7 @@ Note : Read the **[Usage Guidelines](./Usage_Guidelines.md)** for a complete and
   <img
     src="https://cdn.jsdelivr.net/gh/Secure-Smart-Sync/Secure-Smart-Sync-assets/Banners/Site_QR.svg"
     alt="Secure Smart Sync Banner"
-    width="50%">
+    width="40">
 </p>
 
 **Prefer a visual guide?** Visit our **[official site Secure Smart Sync](https://secure-smart-sync.pages.dev)** for all you need to get started in 5-minute walkthrough along with comprehensive documentation.
