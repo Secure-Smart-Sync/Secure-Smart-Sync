@@ -10,6 +10,7 @@
 
 import { Platform } from "obsidian";
 import type { App } from "obsidian";
+import { setHtmlContent } from "./utils";
 
 // ─── Ribbon indicator ─────────────────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ export function mountMobileIndicator(
   if (mState.mobileIndicatorEl) return;
 
   const el = document.body.createDiv({ cls: "sss-mob-indicator sss-mob-idle" });
-  el.innerHTML = MOBILE_LOGO_SVG;
+  setHtmlContent(el, MOBILE_LOGO_SVG);
   el.addEventListener("click", onTap);
   mState.mobileIndicatorEl = el;
 

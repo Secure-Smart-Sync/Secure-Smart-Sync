@@ -71,7 +71,7 @@ import {
   type SyncStats,
   type SyncTrigger,
 } from "./types";
-import { toText } from "./utils";
+import { toText, setHtmlContent } from "./utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -411,8 +411,10 @@ export default class SSSPlugin extends Plugin {
   /** Update status bar icon (separate from ribbon badge). */
   private _setStatusIcon(state: "idle" | "syncing" | "error"): void {
     if (!this.ribbonState.statusBarEl) return;
-    this.ribbonState.statusBarEl.innerHTML =
-      `<span class="sss-status-icon">${SSSPlugin.STATUS_ICONS[state]}</span>SSS`;
+    setHtmlContent(
+      this.ribbonState.statusBarEl,
+      `<span class="sss-status-icon">${SSSPlugin.STATUS_ICONS[state]}</span>SSS`
+    );
   }
 
   /** Restart all scheduling from current settings. Called on load and saveSettings. */

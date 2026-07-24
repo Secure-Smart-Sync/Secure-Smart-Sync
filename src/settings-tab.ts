@@ -11,6 +11,7 @@ import { createPairingSlot, consumePairingSlot, checkRelayHealth } from "./pairi
 import type { SyncTask } from "./sync-engine";
 import { DEFAULT_RELAY_URL } from "./types";
 import type { ConflictResolution, DeleteBehaviour, EncryptionMethod, PluginSettings, SyncDirection } from "./types";
+import { setHtmlContent } from "./utils";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -263,7 +264,7 @@ export class SSSSettingTab extends PluginSettingTab {
     const header = containerEl.createDiv({ cls: "sss-header" });
 
     const logoWrap = header.createDiv({ cls: "sss-header-logo" });
-    logoWrap.innerHTML = SSS_HEADER_SVG;
+    setHtmlContent(logoWrap, SSS_HEADER_SVG);
 
     const headerText = header.createDiv({ cls: "sss-header-text" });
     headerText.createEl("span", { text: "Secure-Smart-Sync", cls: "sss-header-title" });
@@ -380,7 +381,7 @@ export class SSSSettingTab extends PluginSettingTab {
     const r2Btn = r2Row.createEl("button", {
       cls: `sss-configure-btn${this._r2Open ? " is-open" : ""}`,
     });
-    r2Btn.innerHTML = `${this._r2Open ? "Close" : "Configure"}${CHEVRON_SVG}`;
+    setHtmlContent(r2Btn, `${this._r2Open ? "Close" : "Configure"}${CHEVRON_SVG}`);
     r2Btn.addEventListener("click", () => {
       this._r2Open = !this._r2Open;
       this.display();
@@ -498,7 +499,7 @@ export class SSSSettingTab extends PluginSettingTab {
     if (isLocked) {
       const lockBanner = containerEl.createDiv({ cls: "sss-enc-lock-banner" });
       const lockIcon = lockBanner.createSpan({ cls: "sss-enc-lock-icon" });
-      lockIcon.innerHTML = LOCK_SVG;
+      setHtmlContent(lockIcon, LOCK_SVG);
       lockBanner.createEl("span", {
         text: "Encryption method is locked to prevent vault lockout. A dedicated migration workflow is required to change it.",
       });
@@ -564,7 +565,7 @@ export class SSSSettingTab extends PluginSettingTab {
       // Append a small inline lock badge to the method setting name.
       const nameEl = methodSetting.nameEl;
       const badge = nameEl.createSpan({ cls: "sss-enc-locked-badge" });
-      badge.innerHTML = LOCK_SVG;
+      setHtmlContent(badge, LOCK_SVG);
       badge.title = "Locked";
     }
 
@@ -997,14 +998,14 @@ export class SSSSettingTab extends PluginSettingTab {
 
     const left = card.createDiv({ cls: "sss-resource-left" });
     const iconEl = left.createDiv({ cls: "sss-resource-icon" });
-    iconEl.innerHTML = opts.iconSvg;
+    setHtmlContent(iconEl, opts.iconSvg);
 
     const text = left.createDiv({ cls: "sss-resource-text" });
     text.createEl("span", { text: opts.label, cls: "sss-resource-label" });
     text.createEl("span", { text: opts.desc,  cls: "sss-resource-desc"  });
 
     const arrow = card.createDiv({ cls: "sss-resource-arrow" });
-    arrow.innerHTML = EXTLINK_SVG;
+    setHtmlContent(arrow, EXTLINK_SVG);
   }
 
   private _setConnectionResult(msg: string, cls: string): void {

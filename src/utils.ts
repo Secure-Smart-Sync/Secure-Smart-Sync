@@ -232,3 +232,23 @@ export const roughObjectSize = (obj: unknown): number => {
   }
   return bytes;
 };
+
+// ─── Safe DOM helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Parse a trusted static HTML/SVG string via DOMParser and append the
+ * resulting nodes into `el`, avoiding direct `innerHTML` assignment.
+ *
+ * **Only use with hardcoded markup — never with user-supplied strings.**
+ *
+ * Obsidian's plugin review rejects any use of `el.innerHTML = …`.
+ * DOMParser produces an inert document (scripts won't execute), and
+ * we move the parsed nodes into the live DOM with `appendChild`.
+ */
+export function setHtmlContent(el: HTMLElement, html: string): void {
+  el.empty();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  while (doc.body.firstChild) {
+    el.appendChild(doc.body.firstChild);
+  }
+}
